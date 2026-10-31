@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Crictl Segfault Monitor</title>
+<link href="static-shared.css" rel="stylesheet"/>
+<style>
+    :root {
+      --bg: #f4f7f5;
+      --panel: #ffffff;
+      --ink: #202630;
+      --muted: #56606e;
+      --line: #d6dde7;
+      --accent: #0b5f8a;
+    }
+    body {
+      margin: 0;
+      padding: 0 20px 20px 20px;
+      background: linear-gradient(180deg, #f8fbf9 0%, #eef3f7 100%);
+      color: var(--ink);
+      font-family: "Segoe UI", Tahoma, sans-serif;
+    }
+    h1 { margin: 0 0 8px 0; font-size: 1.7rem; font-weight: 700; color: var(--ink); }
+    p.meta { margin: 0 0 20px 0; color: var(--muted); }
+        .top-links { margin: 0 0 12px 0; }
+        .top-links a { color: var(--accent); text-decoration: none; font-weight: 600; }
+        .top-links a:hover { text-decoration: underline; }
+        .status-banner {
+            border-radius: 10px;
+            padding: 12px;
+            margin: 0 0 16px 0;
+            border: 1px solid var(--line);
+            background: var(--panel);
+        }
+        .status-banner h2 { margin: 0 0 8px 0; }
+        .status-banner p { margin: 6px 0; }
+        .status-banner a { color: var(--accent); }
+        .status-ok { border-left: 6px solid #1b8a4b; }
+        .status-alert { border-left: 6px solid #b5002d; background: #fff2f4; }
+    .cards {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      margin-bottom: 20px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      min-width: 0;
+    }
+    .card h3 { margin: 0; font-size: 13px; color: var(--muted); }
+    .card p {
+      margin: 8px 0 0 0;
+      line-height: 1.2;
+      color: var(--accent);
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      font-size: clamp(20px, 2.2vw, 36px);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      margin-bottom: 24px;
+      table-layout: fixed;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px;
+      text-align: left;
+      font-size: 13px;
+      vertical-align: top;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    th {
+      background: #edf2f8;
+      color: #2c3a4a;
+      position: sticky;
+      top: 0;
+    }
+    h2 { margin-top: 8px; }
+    .table-wrap { overflow-x: auto; }
+
+    @media (max-width: 720px) {
+      body { padding: 12px; }
+      .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .card { padding: 10px; }
+      .card h3 { font-size: 12px; }
+      .card p { font-size: clamp(16px, 6vw, 24px); }
+      th, td { font-size: 12px; padding: 6px; }
+    }
+  </style>
+</head>
+<body class="status-preview">
+<style>
+.static-nav {
+    background: #edf2f8; border-bottom: 1px solid #d6dde7;
+    padding: 8px 24px; display: flex; gap: 16px; align-items: center;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    font-size: 0.82rem;
+}
+.static-nav a {
+    color: #0b5f8a; text-decoration: none; font-weight: 600;
+    padding: 4px 12px; border-radius: 4px; transition: background 0.15s;
+}
+.static-nav a:hover { background: rgba(11,95,138,0.1); }
+.static-nav a.active { background: rgba(11,95,138,0.15); color: #0a4a6a; }
+.static-nav .nav-sep { color: #b0bec5; }
+</style>
+<div class="static-nav">
+<a href="index.html">Health Dashboard</a>
+<span class="nav-sep">|</span>
+<a class="active" href="crictl_segfault_report.html">Segfault Monitor</a>
+<span class="nav-sep">|</span>
+<a href="version_audit_report.html">Version Audit</a>
+</div><p class="preview-controls"><label><input checked="" id="statusColors" onchange="document.body.classList.toggle('status-preview', this.checked)" title="Use demo status colors instead of system contrast colors" type="checkbox"/> Status colors</label></p>
+<h1>Crictl Segfault Monitor</h1>
+<p class="meta">Synthetic snapshot | 2030-04-16T10:20:00Z</p>
+<p class="top-links"><a href="crictl_segfault_about.html">About This Report and Detection Logic</a></p>
+<div class="cards">
+<div class="card"><h3>Total Runs</h3><p>1</p></div>
+<div class="card"><h3>Total Checks</h3><p>9</p></div>
+<div class="card"><h3>Total Segfault Hits</h3><p>1</p></div>
+<div class="card"><h3>Latest Run</h3><p>2030-04-16T10:20:00Z</p></div>
+<div class="card"><h3>Latest OK</h3><p>5</p></div>
+<div class="card"><h3>Latest Failures</h3><p>1</p></div>
+<div class="card"><h3>Latest Output Failures</h3><p>1</p></div>
+<div class="card"><h3>Not Sampled</h3><p>1</p></div>
+<div class="card"><h3>dmesg History Hits</h3><p>2</p></div>
+</div>
+<div class="status-banner status-alert"><h2>Segfault Status</h2><p>1 live event | 2 historical observations | 1 not sampled</p><p><a href="crictl_segfault_alert_latest.html">Open Latest Segfault Alert Page</a></p></div>
+<h2>Historical Segfault Check (dmesg since boot)</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>Timestamp (UTC)</th><th>Hostname</th><th>Target Node</th><th>Location</th><th>Host Uptime</th><th>dmesg Evidence</th></tr>
+</thead>
+<tbody><tr><td>2030-04-16T10:20:00Z</td><td>alpha-compute-03.example.test</td><td>alpha-compute-03</td><td>Site-Alpha</td><td>9 days</td><td>Synthetic prior crash; current check passed</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>gamma-compute-02.example.test</td><td>gamma-compute-02</td><td>Site-Gamma</td><td>9 days</td><td>Synthetic prior crash; current check passed</td></tr></tbody>
+</table>
+</div>
+<h2>Latest Run All Nodes</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>Timestamp (UTC)</th><th>Hostname</th><th>Target Node</th><th>Location</th><th>Status</th><th>Segfault Count</th><th>Message</th></tr>
+</thead>
+<tbody><tr><td>2030-04-16T10:20:00Z</td><td>alpha-compute-01.example.test</td><td>alpha-compute-01</td><td>Site-Alpha</td><td class="status-chip demo-up">OK</td><td>0</td><td>Demo runtime check completed</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>alpha-compute-02.example.test</td><td>alpha-compute-02</td><td>Site-Alpha</td><td class="status-chip demo-down">FAIL_SEGFAULT</td><td>1</td><td>Synthetic crictl signal 11 event</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>alpha-compute-03.example.test</td><td>alpha-compute-03</td><td>Site-Alpha</td><td class="status-chip demo-warn">WARN_SEGFAULT_HISTORY</td><td>0</td><td>Synthetic prior crash; current check passed</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>beta-compute-01.example.test</td><td>beta-compute-01</td><td>Site-Beta</td><td class="status-chip demo-up">OK</td><td>0</td><td>Demo runtime check completed</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>beta-compute-02.example.test</td><td>beta-compute-02</td><td>Site-Beta</td><td class="status-chip demo-up">OK</td><td>0</td><td>Demo runtime check completed</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>beta-compute-03.example.test</td><td>beta-compute-03</td><td>Site-Beta</td><td class="status-chip demo-up">OK</td><td>0</td><td>Demo runtime check completed</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>gamma-compute-01.example.test</td><td>gamma-compute-01</td><td>Site-Gamma</td><td class="status-chip demo-up">OK</td><td>0</td><td>Demo runtime check completed</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>gamma-compute-02.example.test</td><td>gamma-compute-02</td><td>Site-Gamma</td><td class="status-chip demo-warn">WARN_SEGFAULT_HISTORY</td><td>0</td><td>Synthetic prior crash; current check passed</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>gamma-compute-03.example.test</td><td>gamma-compute-03</td><td>Site-Gamma</td><td class="status-chip demo-nodata">NOT_SAMPLED</td><td>0</td><td>Collection paused for demo maintenance</td></tr></tbody>
+</table>
+</div>
+<h2>Latest Run Output-Derived Failures</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>Timestamp (UTC)</th><th>Hostname</th><th>Target Node</th><th>Location</th><th>Status</th><th>Exit</th><th>Evidence/Error</th></tr>
+</thead>
+<tbody><tr><td>2030-04-16T10:20:00Z</td><td>alpha-compute-02.example.test</td><td>alpha-compute-02</td><td>Site-Alpha</td><td class="status-chip demo-down">FAIL_SEGFAULT</td><td>139</td><td>Synthetic crictl signal 11 event</td></tr></tbody>
+</table>
+</div>
+<h2>Latest Run Infrastructure Issues</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>Timestamp (UTC)</th><th>Hostname</th><th>Location</th><th>Status</th><th>Error</th></tr>
+</thead>
+<tbody><tr><td>2030-04-16T10:20:00Z</td><td>gamma-compute-03.example.test</td><td>Site-Gamma</td><td class="status-chip demo-nodata">NOT_SAMPLED</td><td>Collection paused for demo maintenance</td></tr></tbody>
+</table>
+</div>
+<h2>Latest Run OK Evidence (No Segfault)</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>Timestamp (UTC)</th><th>Hostname</th><th>Target Node</th><th>Location</th><th>OK Evidence</th></tr>
+</thead>
+<tbody><tr><td>2030-04-16T10:20:00Z</td><td>alpha-compute-01.example.test</td><td>alpha-compute-01</td><td>Site-Alpha</td><td>Demo runtime check completed</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>beta-compute-01.example.test</td><td>beta-compute-01</td><td>Site-Beta</td><td>Demo runtime check completed</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>beta-compute-02.example.test</td><td>beta-compute-02</td><td>Site-Beta</td><td>Demo runtime check completed</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>beta-compute-03.example.test</td><td>beta-compute-03</td><td>Site-Beta</td><td>Demo runtime check completed</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>gamma-compute-01.example.test</td><td>gamma-compute-01</td><td>Site-Gamma</td><td>Demo runtime check completed</td></tr></tbody>
+</table>
+</div>
+<h2>Recent History (Last 300 Rows)</h2>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>Timestamp (UTC)</th><th>Run ID</th><th>Hostname</th><th>Target Node</th><th>Status</th><th>Segfault Count</th><th>Message</th></tr>
+</thead>
+<tbody><tr><td>2030-04-16T10:20:00Z</td><td>demo-run-07</td><td>alpha-compute-01.example.test</td><td>alpha-compute-01</td><td class="status-chip demo-up">OK</td><td>0</td><td>Demo runtime check completed</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>demo-run-07</td><td>alpha-compute-02.example.test</td><td>alpha-compute-02</td><td class="status-chip demo-down">FAIL_SEGFAULT</td><td>1</td><td>Synthetic crictl signal 11 event</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>demo-run-07</td><td>alpha-compute-03.example.test</td><td>alpha-compute-03</td><td class="status-chip demo-warn">WARN_SEGFAULT_HISTORY</td><td>0</td><td>Synthetic prior crash; current check passed</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>demo-run-07</td><td>beta-compute-01.example.test</td><td>beta-compute-01</td><td class="status-chip demo-up">OK</td><td>0</td><td>Demo runtime check completed</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>demo-run-07</td><td>beta-compute-02.example.test</td><td>beta-compute-02</td><td class="status-chip demo-up">OK</td><td>0</td><td>Demo runtime check completed</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>demo-run-07</td><td>beta-compute-03.example.test</td><td>beta-compute-03</td><td class="status-chip demo-up">OK</td><td>0</td><td>Demo runtime check completed</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>demo-run-07</td><td>gamma-compute-01.example.test</td><td>gamma-compute-01</td><td class="status-chip demo-up">OK</td><td>0</td><td>Demo runtime check completed</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>demo-run-07</td><td>gamma-compute-02.example.test</td><td>gamma-compute-02</td><td class="status-chip demo-warn">WARN_SEGFAULT_HISTORY</td><td>0</td><td>Synthetic prior crash; current check passed</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>demo-run-07</td><td>gamma-compute-03.example.test</td><td>gamma-compute-03</td><td class="status-chip demo-nodata">NOT_SAMPLED</td><td>0</td><td>Collection paused for demo maintenance</td></tr></tbody>
+</table>
+</div>
+</body>
+</html>

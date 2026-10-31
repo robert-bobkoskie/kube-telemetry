@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Health Dashboard</title>
+<link href="static-shared.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+    --bg: #0a0e14;
+    --bg-card: #131920;
+    --bg-hover: #1a2332;
+    --border: #1e2a3a;
+    --text: #e4e8ee;
+    --text-dim: #6b7d93;
+    --green: #00e676;
+    --green-bg: rgba(0,230,118,0.08);
+    --red: #ff1744;
+    --red-bg: rgba(255,23,68,0.08);
+    --orange: #ffab00;
+    --orange-bg: rgba(255,171,0,0.08);
+    --blue: #40c4ff;
+    --gray: #78909c;
+    --gray-bg: rgba(120,144,156,0.08);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+}
+
+/* Header */
+body { padding: 0 20px 20px 20px; }
+h1 { margin: 0 0 8px 0; font-size: 1.7rem; font-weight: 700; color: var(--text); }
+p.meta { margin: 0 0 8px 0; color: var(--text-dim); font-size: 0.82rem; }
+p.top-links { margin: 0 0 12px 0; }
+p.top-links a { color: var(--blue); text-decoration: none; font-weight: 600; cursor: pointer; }
+p.top-links a:hover { text-decoration: underline; }
+.pill { padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: 700; }
+.pill-down { background: var(--red-bg); color: var(--red); border: 1px solid rgba(255,23,68,0.3); }
+.pill-warn { background: var(--orange-bg); color: var(--orange); border: 1px solid rgba(255,171,0,0.3); }
+.pill-up { background: var(--green-bg); color: var(--green); border: 1px solid rgba(0,230,118,0.3); }
+.pill-nodata { background: var(--gray-bg); color: var(--gray); border: 1px solid rgba(120,144,156,0.3); }
+
+/* Tile Grid */
+.grid-container { padding: 0; }
+.tile-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+}
+
+/* Column headers */
+.col-header {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 8px 12px;
+    text-align: center;
+    border-radius: 6px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    margin-bottom: 4px;
+    color: var(--text-dim);
+}
+.col-header.has-down { color: var(--red); border-color: rgba(255,23,68,0.3); background: var(--red-bg); }
+.col-header.has-warn { color: var(--orange); border-color: rgba(255,171,0,0.3); background: var(--orange-bg); }
+
+/* Tiles */
+.tile {
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    min-height: 130px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+.tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.tile-up { border-color: var(--green); background: var(--green-bg); }
+.tile-up:hover { box-shadow: 0 8px 24px rgba(0,230,118,0.15); }
+.tile-down { border-color: var(--red); background: var(--red-bg); }
+.tile-down:hover { box-shadow: 0 8px 24px rgba(255,23,68,0.15); }
+.tile-warn { border-color: var(--orange); background: var(--orange-bg); }
+.tile-warn:hover { box-shadow: 0 8px 24px rgba(255,171,0,0.15); }
+.tile-nodata { border-color: var(--gray); background: var(--gray-bg); }
+.tile-nodata:hover { box-shadow: 0 8px 24px rgba(120,144,156,0.15); }
+
+.tile .status-label {
+    font-size: 1.8rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+.tile-up .status-label { color: var(--green); }
+.tile-down .status-label { color: var(--red); }
+.tile-warn .status-label { color: var(--orange); }
+.tile-nodata .status-label { color: var(--gray); }
+
+.tile .tile-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.tile .tile-summary {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+}
+
+/* Detail View */
+.detail-view {
+    display: none;
+    padding: 24px 32px;
+}
+.detail-view.active { display: block; }
+.detail-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--blue);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px 16px;
+    border-radius: 6px;
+    background: rgba(64,196,255,0.08);
+    border: 1px solid rgba(64,196,255,0.2);
+    margin-bottom: 20px;
+    transition: background 0.15s;
+}
+.detail-back:hover { background: rgba(64,196,255,0.15); }
+.detail-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.detail-header .detail-status {
+    font-size: 1.6rem;
+    font-weight: 900;
+    padding: 6px 20px;
+    border-radius: 8px;
+}
+.detail-header .detail-status.st-up { color: var(--green); background: var(--green-bg); }
+.detail-header .detail-status.st-down { color: var(--red); background: var(--red-bg); }
+.detail-header .detail-status.st-warn { color: var(--orange); background: var(--orange-bg); }
+.detail-header .detail-status.st-nodata { color: var(--gray); background: var(--gray-bg); }
+.detail-header h2 { font-size: 1.3rem; font-weight: 700; }
+.detail-header .detail-summary { color: var(--text-dim); font-size: 0.85rem; margin-top: 2px; }
+
+/* Detail Table */
+.detail-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+}
+.detail-table-wrap { overflow-x: auto; max-height: 70vh; overflow-y: auto; }
+.detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+}
+.detail-table th {
+    background: #0d1520;
+    color: var(--text-dim);
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+.detail-table th:hover { color: var(--blue); }
+.detail-table th .arrow { margin-left: 4px; opacity: 0.4; font-size: 0.6rem; }
+.detail-table th.sorted .arrow { opacity: 1; color: var(--blue); }
+.detail-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+}
+.detail-table tr:hover td { background: var(--bg-hover); }
+.detail-table .cell-up { color: var(--green); font-weight: 700; }
+.detail-table .cell-down { color: var(--red); font-weight: 700; }
+.detail-table .cell-warn { color: var(--orange); font-weight: 700; }
+
+/* Chart container */
+.chart-wrap {
+    padding: 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 16px;
+}
+.chart-wrap canvas { max-height: 350px; }
+
+/* Description box */
+.detail-desc {
+    background: rgba(64,196,255,0.05);
+    border: 1px solid rgba(64,196,255,0.15);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    color: var(--text-dim);
+    font-size: 0.82rem;
+    line-height: 1.5;
+}
+
+/* About Page */
+.about-section { margin-bottom: 32px; }
+.about-section-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.about-tile-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 14px; }
+.about-tile-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; }
+.about-tile-header { color: var(--cyan); font-size: 0.92rem; font-weight: 700; margin-bottom: 6px; }
+.about-tile-desc { color: var(--text-dim); font-size: 0.8rem; line-height: 1.45; margin-bottom: 8px; }
+.about-threshold { color: var(--orange); font-weight: 600; }
+.about-tile-cmd { background: rgba(0,0,0,0.25); border-radius: 4px; padding: 5px 10px; margin-bottom: 4px; }
+.about-tile-cmd code { color: var(--green); font-size: 0.74rem; word-break: break-all; }
+.about-tile-filter { color: #6b7d93; font-size: 0.72rem; margin-top: 4px; font-style: italic; }
+.about-tile-filter code { color: #8ea4b8; font-size: 0.72rem; }
+.about-fallback { color: var(--orange); font-size: 0.7rem; font-style: italic; }
+.about-arch-item { display: flex; align-items: center; gap: 12px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px 18px; }
+.about-arch-icon { font-size: 1.5rem; }
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .tile-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 768px) {
+    .tile-grid { grid-template-columns: repeat(2, 1fr); }
+    .header { flex-direction: column; gap: 8px; }
+    .grid-container { padding: 12px; }
+}
+</style>
+</head>
+<body class="status-preview">
+<style>
+.static-nav {
+    background: #101820; border-bottom: 1px solid #1e2a3a;
+    padding: 8px 24px; display: flex; gap: 16px; align-items: center;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 0.82rem;
+}
+.static-nav a {
+    color: #40c4ff; text-decoration: none; font-weight: 600;
+    padding: 4px 12px; border-radius: 4px; transition: background 0.15s;
+}
+.static-nav a:hover { background: rgba(64,196,255,0.12); }
+.static-nav a.active { background: rgba(64,196,255,0.18); color: #fff; }
+.static-nav .nav-sep { color: #2a3a4a; }
+</style>
+<div class="static-nav">
+<a class="active" href="index.html">Health Dashboard</a>
+<span class="nav-sep">|</span>
+<a href="crictl_segfault_report.html">Segfault Monitor</a>
+<span class="nav-sep">|</span>
+<a href="version_audit_report.html">Version Audit</a>
+</div><p class="preview-controls"><label><input checked="" id="statusColors" onchange="document.body.classList.toggle('status-preview', this.checked)" title="Use demo status colors instead of system contrast colors" type="checkbox"/> Status colors</label></p>
+<h1>Demo Platform Health Dashboard</h1>
+<p class="meta">Synthetic snapshot | Site-Alpha, Site-Beta, Site-Gamma | 2030-04-16T10:20:00Z</p>
+<p class="top-links"><a href="javascript:void(0)" onclick="showAbout()">About this Dashboard</a></p>
+<div style="display: flex; gap: 8px; margin-bottom: 16px;"><span class="pill pill-up">22 UP</span> <span class="pill pill-down">7 DOWN</span> <span class="pill pill-warn">4 WARN</span> <span class="pill pill-nodata">2 NO DATA</span></div>
+<!-- TILE GRID VIEW -->
+<div id="gridView">
+<div class="grid-container">
+<div class="tile-grid">
+<div class="col-header has-down">Applications</div>
+<div class="col-header">Ingress &amp; Networking</div>
+<div class="col-header has-down">Cluster &amp; Security</div>
+<div class="col-header">Infrastructure</div>
+<div class="col-header has-warn">Health &amp; Certs</div>
+<div class="col-header has-down">Resources</div>
+<div class="tile tile-up" onclick="showDetail('sbi-controller')">
+<div class="tile-name">SBI Controller Status</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">4/4 healthy</div>
+</div>
+<div class="tile tile-up" onclick="showDetail('traefik')">
+<div class="tile-name">Platform Traefik</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">4/4 healthy</div>
+</div>
+<div class="tile tile-up" onclick="showDetail('astra-security')">
+<div class="tile-name">Platform ASTRA Status</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">4/4 healthy</div>
+</div>
+<div class="tile tile-up" onclick="showDetail('kube-system')">
+<div class="tile-name">Kube-System</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">4/4 healthy</div>
+</div>
+<div class="tile tile-warn" onclick="showDetail('high-restarts')">
+<div class="tile-name">High Restart Pods</div>
+<div class="status-label">WARN</div>
+<div class="tile-summary">1 pod &gt;5 restarts</div>
+</div>
+<div class="tile tile-down" onclick="showDetail('cpu-utilization')">
+<div class="tile-name">CPU Utilization</div>
+<div class="status-label">DOWN</div>
+<div class="tile-summary">Peak 97%</div>
+</div>
+<div class="tile tile-down" onclick="showDetail('argocd')">
+<div class="tile-name">ArgoCD</div>
+<div class="status-label">DOWN</div>
+<div class="tile-summary">3/4 healthy</div>
+</div>
+<div class="tile tile-up" onclick="showDetail('controller-traefik')">
+<div class="tile-name">Controller Traefik</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">1/1 healthy</div>
+</div>
+<div class="tile tile-up" onclick="showDetail('controller-astra')">
+<div class="tile-name">Controller ASTRA Status</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">1/1 healthy</div>
+</div>
+<div class="tile tile-nodata" onclick="showDetail('etcd-snapshots')">
+<div class="tile-name">etcd Snapshots</div>
+<div class="status-label">NO DATA</div>
+<div class="tile-summary">Not sampled in this demo snapshot</div>
+</div>
+<div class="tile tile-nodata" onclick="showDetail('sbi-mgmt-certs')">
+<div class="tile-name">SBI MGMT Certs</div>
+<div class="status-label">NO DATA</div>
+<div class="tile-summary">Not sampled in this demo snapshot</div>
+</div>
+<div class="tile tile-down" onclick="showDetail('memory-utilization')">
+<div class="tile-name">Memory Utilization</div>
+<div class="status-label">DOWN</div>
+<div class="tile-summary">Peak 98%</div>
+</div>
+<div class="tile tile-up" onclick="showDetail('svc-namespace')">
+<div class="tile-name">Controller NS Pod Status</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">4/4 healthy</div>
+</div>
+<div class="tile tile-up" onclick="showDetail('svclb-traefik')">
+<div class="tile-name">Service LB</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">4/4 healthy</div>
+</div>
+<div class="tile tile-down" onclick="showDetail('k8s-nodes')">
+<div class="tile-name">K8s Nodes</div>
+<div class="status-label">DOWN</div>
+<div class="tile-summary">3/4 healthy</div>
+</div>
+<div class="tile tile-up" onclick="showDetail('platform-job-status')">
+<div class="tile-name">Platform K8 Job Status</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">4/4 healthy</div>
+</div>
+<div class="tile tile-warn" onclick="showDetail('controller-k8s-mgmt-certs')">
+<div class="tile-name">Controller K8S MGMT Certs</div>
+<div class="status-label">WARN</div>
+<div class="tile-summary">1 certificate: 20 days remaining</div>
+</div>
+<div class="tile tile-up" onclick="showDetail('disk-utilization')">
+<div class="tile-name">Disk Utilization</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">Peak 57%</div>
+</div>
+<div class="tile tile-up" onclick="showDetail('ctrl-infra-pods')">
+<div class="tile-name">Controller Infra NS Pods</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">4/4 healthy</div>
+</div>
+<div class="tile tile-up" onclick="showDetail('coredns')">
+<div class="tile-name">CoreDNS</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">4/4 healthy</div>
+</div>
+<div class="tile tile-down" onclick="showDetail('daemonsets')">
+<div class="tile-name">DaemonSets</div>
+<div class="status-label">DOWN</div>
+<div class="tile-summary">3/4 healthy</div>
+</div>
+<div class="tile tile-up" onclick="showDetail('controller-job-status')">
+<div class="tile-name">Controller K8 Job Status</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">1/1 healthy</div>
+</div>
+<div class="tile tile-up" onclick="showDetail('ingress-certs')">
+<div class="tile-name">Platform Ingress Certs</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">2 certificates valid</div>
+</div>
+<div class="tile tile-up" onclick="showDetail('load-average')">
+<div class="tile-name">Load Average</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">Peak 1-minute load: 2.1</div>
+</div>
+<div class="tile tile-up" onclick="showDetail('controller-olly-pods')">
+<div class="tile-name">Controller OLLY NS Pods</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">1/1 healthy</div>
+</div>
+<div class="tile tile-up" onclick="showDetail('metrics-server')">
+<div class="tile-name">Metrics Server</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">4/4 healthy</div>
+</div>
+<div class="tile tile-warn" onclick="showDetail('platform-version')">
+<div class="tile-name">Platform K3s Status</div>
+<div class="status-label">WARN</div>
+<div class="tile-summary">2 versions mixed</div>
+</div>
+<div class="tile tile-up" onclick="showDetail('platform-vms')">
+<div class="tile-name">Platform VMs Health Status</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">3/3 reachable</div>
+</div>
+<div class="tile tile-warn" onclick="showDetail('pod-health')">
+<div class="tile-name">Pod Health</div>
+<div class="status-label">WARN</div>
+<div class="tile-summary">3/4 healthy</div>
+</div>
+<div class="tile tile-down" onclick="showDetail('k8s-node-cpu')">
+<div class="tile-name">K8s Node CPU</div>
+<div class="status-label">DOWN</div>
+<div class="tile-summary">Peak 97%</div>
+</div>
+<div></div>
+<div class="tile tile-up" onclick="showDetail('k8s-services')">
+<div class="tile-name">K8s Services</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">4/4 healthy</div>
+</div>
+<div class="tile tile-up" onclick="showDetail('controller-version')">
+<div class="tile-name">Controller K3s Status</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">v1.32.4+k3s1</div>
+</div>
+<div class="tile tile-up" onclick="showDetail('controller-vms')">
+<div class="tile-name">Controller VMs Health Status</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">1/1 reachable</div>
+</div>
+<div class="tile tile-up" onclick="showDetail('platform-k8s-mgmt-certs')">
+<div class="tile-name">Platform K8S MGMT Certs</div>
+<div class="status-label">UP</div>
+<div class="tile-summary">2 certificates valid</div>
+</div>
+<div class="tile tile-down" onclick="showDetail('k8s-node-memory')">
+<div class="tile-name">K8s Node Memory</div>
+<div class="status-label">DOWN</div>
+<div class="tile-summary">Peak 98%</div>
+</div>
+</div>
+</div>
+</div>
+<!-- DETAIL VIEW -->
+<div class="detail-view" id="detailView">
+<div class="detail-back" onclick="showGrid()">← Back to Dashboard</div>
+<div class="detail-header">
+<div class="detail-status" id="detailStatus"></div>
+<div>
+<h2 id="detailTitle"></h2>
+<div class="detail-summary" id="detailSummary"></div>
+</div>
+</div>
+<div class="detail-desc" id="detailDesc"></div>
+<div id="detailCharts"></div>
+<div id="detailTables"></div>
+</div>
+<!-- ABOUT VIEW -->
+<div class="detail-view" id="aboutView">
+<div class="detail-back" onclick="hideAbout()">← Back to Dashboard</div>
+<div style="padding:8px 0;">
+<h2 style="font-size:1.5rem;margin-bottom:4px;">About this Dashboard</h2>
+<p style="color:var(--text-dim);font-size:0.85rem;margin-bottom:24px;">
+            This dashboard provides real-time health monitoring of the Demo Platform &amp; Controller infrastructure across multiple sites.
+            Data is collected via SSH from each host, evaluated against thresholds, and rendered as the tile statuses on the landing page.
+            Each tile below shows the SSH commands used to gather its data.
+        </p>
+<!-- ===== APPLICATIONS ===== -->
+<div class="about-section">
+<h3 class="about-section-title">Applications</h3>
+<div class="about-tile-list">
+<div class="about-tile-card">
+<div class="about-tile-header">SBI Controller Status</div>
+<div class="about-tile-desc">SBI controller pods + deployed version from ArgoCD. <span class="about-threshold">DOWN if any pod not Running/Completed. Shows version on tile.</span></div>
+<div class="about-tile-cmd"><code>kubectl get pods -n svc -o wide --no-headers</code></div>
+<div class="about-tile-cmd"><code>kubectl get application -n argocd -o custom-columns=NAME:.metadata.name,VERSION:.spec.source.targetRevision --no-headers</code></div>
+<div class="about-tile-filter">Filter: <code>"sbi" in pod_name</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">ArgoCD</div>
+<div class="about-tile-desc">GitOps continuous delivery pods. <span class="about-threshold">DOWN if any pod not Running/Completed.</span></div>
+<div class="about-tile-cmd"><code>kubectl get pods -n argocd -o wide --no-headers</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">Controller NS Pod Status</div>
+<div class="about-tile-desc">All pods in the <code>svc</code> namespace. <span class="about-threshold">DOWN if any pod not Running/Completed.</span></div>
+<div class="about-tile-cmd"><code>kubectl get pods -n svc -o wide --no-headers</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">Controller Infra NS Pods</div>
+<div class="about-tile-desc">Infrastructure namespace pods on controller nodes. <span class="about-threshold">DOWN if any pod not Running/Completed.</span></div>
+<div class="about-tile-cmd"><code>kubectl get pods -n ctrl-infra -o wide --no-headers</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">Controller OLLY NS Pods</div>
+<div class="about-tile-desc">Observability namespace pods on controller nodes. <span class="about-threshold">DOWN if any pod not Running/Completed.</span></div>
+<div class="about-tile-cmd"><code>kubectl get pods -n ctrl-o11y -o wide --no-headers</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">Top Resource Pods</div>
+<div class="about-tile-desc">Top 30 pods ranked by CPU consumption across all namespaces. Identify resource-hungry workloads that may need limits tuned.</div>
+<div class="about-tile-cmd"><code>kubectl top pods --all-namespaces --no-headers</code></div>
+</div>
+</div>
+</div>
+<!-- ===== INGRESS & NETWORKING ===== -->
+<div class="about-section">
+<h3 class="about-section-title">Ingress &amp; Networking</h3>
+<div class="about-tile-list">
+<div class="about-tile-card">
+<div class="about-tile-header">Platform Traefik</div>
+<div class="about-tile-desc">Traefik ingress controller pods running on platform nodes. <span class="about-threshold">DOWN if any not Running.</span></div>
+<div class="about-tile-cmd"><code>kubectl get pods -n kube-system -o wide --no-headers</code></div>
+<div class="about-tile-cmd"><code>kubectl get nodes -o wide --no-headers</code></div>
+<div class="about-tile-filter">Filter: <code>"traefik" in pod_name</code>, exclude <code>"svclb"</code>, node NOT in controller set</div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">Controller Traefik</div>
+<div class="about-tile-desc">Traefik ingress controller pods running on controller nodes. <span class="about-threshold">DOWN if any not Running.</span></div>
+<div class="about-tile-cmd"><code>kubectl get pods -n kube-system -o wide --no-headers</code></div>
+<div class="about-tile-cmd"><code>kubectl get nodes -o wide --no-headers</code></div>
+<div class="about-tile-filter">Filter: <code>"traefik" in pod_name</code>, exclude <code>"svclb"</code>, node IN controller set</div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">Service LB</div>
+<div class="about-tile-desc">Service load-balancer pods (svclb-traefik). <span class="about-threshold">DOWN if any not Running/Completed.</span></div>
+<div class="about-tile-cmd"><code>kubectl get pods -n kube-system -o wide --no-headers</code></div>
+<div class="about-tile-filter">Filter: <code>"svclb" in pod_name</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">CoreDNS</div>
+<div class="about-tile-desc">Cluster DNS resolution pods. <span class="about-threshold">DOWN if any not Running.</span></div>
+<div class="about-tile-cmd"><code>kubectl get pods -n kube-system -o wide --no-headers</code></div>
+<div class="about-tile-filter">Filter: <code>"coredns" in pod_name</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">Metrics Server</div>
+<div class="about-tile-desc">Kubernetes metrics-server for resource monitoring. <span class="about-threshold">DOWN if not Running.</span></div>
+<div class="about-tile-cmd"><code>kubectl get pods -n kube-system -o wide --no-headers</code></div>
+<div class="about-tile-filter">Filter: <code>"metrics-server" in pod_name</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">K8s Services</div>
+<div class="about-tile-desc">All Kubernetes services across namespaces. <span class="about-threshold">WARN if none found.</span></div>
+<div class="about-tile-cmd"><code>kubectl get services -A --no-headers</code></div>
+</div>
+</div>
+</div>
+<!-- ===== CLUSTER & SECURITY ===== -->
+<div class="about-section">
+<h3 class="about-section-title">Cluster &amp; Security</h3>
+<div class="about-tile-list">
+<div class="about-tile-card">
+<div class="about-tile-header">Platform ASTRA Status</div>
+<div class="about-tile-desc">Astra CSO pods running on platform nodes. <span class="about-threshold">DOWN if any not Running/Completed.</span></div>
+<div class="about-tile-cmd"><code>kubectl get pods -n astra-cso-demo -o wide --no-headers</code></div>
+<div class="about-tile-cmd"><code>kubectl get nodes -o wide --no-headers</code></div>
+<div class="about-tile-filter">Filter: node NOT in controller set</div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">Controller ASTRA Status</div>
+<div class="about-tile-desc">Astra CSO pods running on controller nodes. <span class="about-threshold">DOWN if any not Running/Completed.</span></div>
+<div class="about-tile-cmd"><code>kubectl get pods -n astra-cso-demo -o wide --no-headers</code></div>
+<div class="about-tile-cmd"><code>kubectl get nodes -o wide --no-headers</code></div>
+<div class="about-tile-filter">Filter: node IN controller set</div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">K8s Nodes</div>
+<div class="about-tile-desc">Cluster node readiness. <span class="about-threshold">DOWN if any node not Ready.</span></div>
+<div class="about-tile-cmd"><code>kubectl get nodes -o wide --no-headers</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">DaemonSets</div>
+<div class="about-tile-desc">DaemonSet desired vs ready counts. <span class="about-threshold">DOWN if desired ≠ ready.</span></div>
+<div class="about-tile-cmd"><code>kubectl get daemonsets -A --no-headers</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">Platform K3s Status</div>
+<div class="about-tile-desc">K3s version on platform nodes. <span class="about-threshold">WARN if &gt;1 unique version across nodes.</span></div>
+<div class="about-tile-cmd"><code>kubectl version</code></div>
+<div class="about-tile-cmd"><code>kubectl get nodes -o wide --no-headers</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">Controller K3s Status</div>
+<div class="about-tile-desc">K3s version on controller nodes plus controller application version via REST API. <span class="about-threshold">WARN if &gt;1 unique K3s version.</span></div>
+<div class="about-tile-cmd"><code>kubectl version</code></div>
+<div class="about-tile-cmd"><code>kubectl get nodes -o wide --no-headers</code></div>
+<div class="about-tile-cmd"><code>curl -s -k -X POST -H "Content-Type: application/json" "https://FQDN/api/login" -d '{"username":...,"password":...}'</code></div>
+<div class="about-tile-cmd"><code>curl -s -k -H "Authorization: Bearer TOKEN" "https://FQDN/api/system-info/get-version"</code></div>
+<div class="about-tile-filter">Credentials: <code>CTRL_API_USERNAME</code> / <code>CTRL_API_PASSWORD</code> from .env</div>
+</div>
+</div>
+</div>
+<!-- ===== INFRASTRUCTURE ===== -->
+<div class="about-section">
+<h3 class="about-section-title">Infrastructure</h3>
+<div class="about-tile-list">
+<div class="about-tile-card">
+<div class="about-tile-header">Platform VMs Health Status</div>
+<div class="about-tile-desc">SSH reachability of platform virtual machines. <span class="about-threshold">DOWN if any host unreachable from collector.</span></div>
+<div class="about-tile-cmd"><code>SSH connect via Paramiko → hostname</code></div>
+<div class="about-tile-filter">Checks: <code>collection_status</code> field in system CSV</div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">Controller VMs Health Status</div>
+<div class="about-tile-desc">SSH reachability of controller virtual machines. <span class="about-threshold">DOWN if any host unreachable from collector.</span></div>
+<div class="about-tile-cmd"><code>SSH connect via Paramiko → hostname</code></div>
+<div class="about-tile-filter">Checks: <code>collection_status</code> field in system CSV</div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">Kube-System</div>
+<div class="about-tile-desc">Core Kubernetes system pods. <span class="about-threshold">DOWN if any not Running/Completed.</span></div>
+<div class="about-tile-cmd"><code>kubectl get pods -n kube-system -o wide --no-headers</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">ETCD Snapshots</div>
+<div class="about-tile-desc">Recent etcd backup snapshots. <span class="about-threshold">WARN if no snapshots found.</span></div>
+<div class="about-tile-cmd"><code>kubectl get etcdsnapshotfile -o json</code></div>
+<div class="about-tile-cmd"><code>sudo ls -lt /var/lib/rancher/k3s/server/db/snapshots/ | head -20</code> <span class="about-fallback">(fallback)</span></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">Platform K8 Job Status</div>
+<div class="about-tile-desc">Kubernetes jobs outside controller namespaces. <span class="about-threshold">DOWN if completions not 1/1 or Complete.</span></div>
+<div class="about-tile-cmd"><code>kubectl get jobs -A --no-headers</code></div>
+<div class="about-tile-filter">Filter: <code>namespace</code> NOT in <code>"ctrl-infra"</code>, <code>"ctrl-o11y"</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">Controller K8 Job Status</div>
+<div class="about-tile-desc">Kubernetes jobs in controller namespaces. <span class="about-threshold">DOWN if completions not 1/1 or Complete.</span></div>
+<div class="about-tile-cmd"><code>kubectl get jobs -A --no-headers</code></div>
+<div class="about-tile-filter">Filter: <code>namespace</code> IN <code>"ctrl-infra"</code>, <code>"ctrl-o11y"</code></div>
+</div>
+</div>
+</div>
+<!-- ===== HEALTH & CERTS ===== -->
+<div class="about-section">
+<h3 class="about-section-title">Health &amp; Certs</h3>
+<div class="about-tile-list">
+<div class="about-tile-card">
+<div class="about-tile-header">Pod Health</div>
+<div class="about-tile-desc">Pods not in Running or Completed state. <span class="about-threshold">DOWN if &gt;3 unhealthy pods.</span></div>
+<div class="about-tile-cmd"><code>kubectl get pods -n &lt;namespace&gt; -o wide --no-headers</code></div>
+<div class="about-tile-filter">Scans all discovered namespaces; Filter: <code>status</code> NOT in <code>"Running"</code>, <code>"Completed"</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">High Restart Pods</div>
+<div class="about-tile-desc">Pods with excessive restart counts. <span class="about-threshold">WARN if any &gt;5 restarts, DOWN if &gt;5 such pods.</span></div>
+<div class="about-tile-cmd"><code>kubectl get pods -n &lt;namespace&gt; -o wide --no-headers</code></div>
+<div class="about-tile-filter">Scans all discovered namespaces; Filter: <code>restarts &gt; 5</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">Platform K8S MGMT Certs</div>
+<div class="about-tile-desc">K3s management &amp; cert-manager certificates on platform hosts. <span class="about-threshold">DOWN if expired, WARN if &lt;60 days.</span></div>
+<div class="about-tile-cmd"><code>kubectl get certificates --all-namespaces -o custom-columns=NAMESPACE,NAME,READY,EXPIRY,RENEWAL,SECRET</code></div>
+<div class="about-tile-cmd"><code>sudo openssl x509 -in /var/lib/rancher/k3s/server/tls/*.crt -noout -enddate</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">Controller K8S MGMT Certs</div>
+<div class="about-tile-desc">K3s management &amp; cert-manager certificates on controller hosts. <span class="about-threshold">DOWN if ready ≠ True.</span></div>
+<div class="about-tile-cmd"><code>kubectl get certificates --all-namespaces -o custom-columns=NAMESPACE,NAME,READY,EXPIRY,RENEWAL,SECRET</code></div>
+<div class="about-tile-cmd"><code>sudo openssl x509 -in /var/lib/rancher/k3s/server/tls/*.crt -noout -enddate</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">SBI MGMT Certs</div>
+<div class="about-tile-desc">TLS secrets in the <code>svc</code> namespace. <span class="about-threshold">DOWN if expired, WARN if &lt;60 days.</span></div>
+<div class="about-tile-cmd"><code>kubectl get secrets -n svc --field-selector type=kubernetes.io/tls --no-headers</code></div>
+<div class="about-tile-cmd"><code>kubectl get secret &lt;name&gt; -n svc -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -enddate</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">Platform Ingress Certs</div>
+<div class="about-tile-desc">TLS secrets bound to Ingress resources + cluster TLS secrets. <span class="about-threshold">DOWN if expired, WARN if &lt;60 days.</span></div>
+<div class="about-tile-cmd"><code>kubectl get ing -A -o json</code></div>
+<div class="about-tile-cmd"><code>kubectl get secrets -A --field-selector type=kubernetes.io/tls --no-headers</code></div>
+<div class="about-tile-cmd"><code>kubectl get secret &lt;name&gt; -n &lt;ns&gt; -o jsonpath='{.data.tls\.crt}' | base64 -d | openssl x509 -noout -enddate</code></div>
+</div>
+</div>
+</div>
+<!-- ===== RESOURCES ===== -->
+<div class="about-section">
+<h3 class="about-section-title">Resources</h3>
+<div class="about-tile-list">
+<div class="about-tile-card">
+<div class="about-tile-header">CPU Utilization</div>
+<div class="about-tile-desc">Per-host CPU usage percentage. <span class="about-threshold">WARN &gt;80%, DOWN &gt;95%.</span></div>
+<div class="about-tile-cmd"><code>top -bn1 | grep 'Cpu(s)' | awk '{print $2 + $4}'</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">Memory Utilization</div>
+<div class="about-tile-desc">Per-host memory usage percentage. <span class="about-threshold">WARN &gt;85%, DOWN &gt;95%.</span></div>
+<div class="about-tile-cmd"><code>free -m | awk 'NR==2{printf "%s,%s,%s,%.1f", $2,$3,$4,($3/$2)*100}'</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">Disk Utilization</div>
+<div class="about-tile-desc">Root filesystem usage. <span class="about-threshold">WARN &gt;85%, DOWN &gt;95%.</span></div>
+<div class="about-tile-cmd"><code>df -h / | awk 'NR==2{print $3","$4","$5}'</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">Load Average</div>
+<div class="about-tile-desc">System load relative to CPU core count. <span class="about-threshold">WARN if 1-min load &gt;8.</span></div>
+<div class="about-tile-cmd"><code>cat /proc/loadavg | awk '{print $1","$2","$3}'</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">K8s Node CPU</div>
+<div class="about-tile-desc">Per-node CPU utilization from Kubernetes metrics. <span class="about-threshold">WARN &gt;80%, DOWN &gt;95%.</span></div>
+<div class="about-tile-cmd"><code>kubectl top nodes --no-headers</code></div>
+</div>
+<div class="about-tile-card">
+<div class="about-tile-header">K8s Node Memory</div>
+<div class="about-tile-desc">Per-node memory utilization from Kubernetes metrics. <span class="about-threshold">WARN &gt;80%, DOWN &gt;95%.</span></div>
+<div class="about-tile-cmd"><code>kubectl top nodes --no-headers</code></div>
+</div>
+</div>
+</div>
+<!-- ===== ARCHITECTURE ===== -->
+<div class="about-section">
+<h3 class="about-section-title">Architecture</h3>
+<div style="display:flex;gap:32px;flex-wrap:wrap;">
+<div class="about-arch-item">
+<div class="about-arch-icon">🖥</div>
+<div><strong>Collector</strong><br/><span style="color:var(--text-dim);font-size:0.8rem;">Python + Paramiko SSH<br/>Parallel workers per host</span></div>
+</div>
+<div class="about-arch-item">
+<div class="about-arch-icon">→</div>
+<div><strong>CSV Storage</strong><br/><span style="color:var(--text-dim);font-size:0.8rem;">Per-host timestamped CSVs<br/>in RESULTS/ directory</span></div>
+</div>
+<div class="about-arch-item">
+<div class="about-arch-icon">→</div>
+<div><strong>Report Generator</strong><br/><span style="color:var(--text-dim);font-size:0.8rem;">Evaluates thresholds<br/>Produces this HTML SPA</span></div>
+</div>
+</div>
+</div>
+<div class="about-section" style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border);">
+<p style="color:var(--text-dim);font-size:0.78rem;">
+                Collector version: metrics_collector — Supports Site-Beta, Site-Gamma, Site-Alpha sites.<br/>
+                Hosts are configured in <code>hosts.yaml</code>. SSH key auth with optional passphrase via <code>.env</code> file.
+            </p>
+</div>
+</div>
+</div>
+<script>
+const DETAILS = {"sbi-controller": {"name": "SBI Controller Status", "description": "Southbound Interface controllers in the 'dn' namespace managing device communication with network elements.", "status": "up", "summary": "4/4 healthy", "detail_type": "table", "columns": ["namespace", "pod_name", "node", "ready", "status", "restarts", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "4/4 healthy", "data": [{"namespace": "demo-services", "pod_name": "demo-sbi-controller-01", "node": "alpha-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"namespace": "demo-services", "pod_name": "demo-sbi-controller-02", "node": "alpha-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"namespace": "demo-services", "pod_name": "demo-sbi-controller-03", "node": "alpha-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"namespace": "demo-services", "pod_name": "demo-sbi-controller-04", "node": "alpha-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Beta": {"status": "up", "summary": "4/4 healthy", "data": [{"namespace": "demo-services", "pod_name": "demo-sbi-controller-01", "node": "beta-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"namespace": "demo-services", "pod_name": "demo-sbi-controller-02", "node": "beta-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"namespace": "demo-services", "pod_name": "demo-sbi-controller-03", "node": "beta-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"namespace": "demo-services", "pod_name": "demo-sbi-controller-04", "node": "beta-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Gamma": {"status": "up", "summary": "4/4 healthy", "data": [{"namespace": "demo-services", "pod_name": "demo-sbi-controller-01", "node": "gamma-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"namespace": "demo-services", "pod_name": "demo-sbi-controller-02", "node": "gamma-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"namespace": "demo-services", "pod_name": "demo-sbi-controller-03", "node": "gamma-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"namespace": "demo-services", "pod_name": "demo-sbi-controller-04", "node": "gamma-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}}}, "argocd": {"name": "ArgoCD", "description": "GitOps continuous delivery engine. Watches Git repos and deploys changes to the cluster.", "status": "down", "summary": "3/4 healthy", "detail_type": "table", "columns": ["pod_name", "node", "ready", "status", "restarts", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-argocd-01", "node": "alpha-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-argocd-02", "node": "alpha-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-argocd-03", "node": "alpha-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-argocd-04", "node": "alpha-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Beta": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-argocd-01", "node": "beta-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-argocd-02", "node": "beta-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-argocd-03", "node": "beta-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-argocd-04", "node": "beta-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Gamma": {"status": "down", "summary": "3/4 healthy", "data": [{"pod_name": "demo-argocd-01", "node": "gamma-compute-01", "ready": "0/1", "status": "CrashLoopBackOff", "restarts": "8", "age": "12d"}, {"pod_name": "demo-argocd-02", "node": "gamma-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-argocd-03", "node": "gamma-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-argocd-04", "node": "gamma-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}}}, "svc-namespace": {"name": "Controller NS Pod Status", "description": "Platform application workloads in the 'dn' namespace. Contains all SBI controllers and supporting services.", "status": "up", "summary": "4/4 healthy", "detail_type": "table", "columns": ["pod_name", "node", "ready", "status", "restarts", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-svc-namespace-01", "node": "alpha-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-svc-namespace-02", "node": "alpha-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-svc-namespace-03", "node": "alpha-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-svc-namespace-04", "node": "alpha-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Beta": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-svc-namespace-01", "node": "beta-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-svc-namespace-02", "node": "beta-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-svc-namespace-03", "node": "beta-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-svc-namespace-04", "node": "beta-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Gamma": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-svc-namespace-01", "node": "gamma-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-svc-namespace-02", "node": "gamma-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-svc-namespace-03", "node": "gamma-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-svc-namespace-04", "node": "gamma-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}}}, "ctrl-infra-pods": {"name": "Controller Infra NS Pods", "description": "Pods in the ctrl-infra namespace (CNPG database, MongoDB, MinIO, NiFi). Core Controller infrastructure services.", "status": "up", "summary": "4/4 healthy", "detail_type": "table", "columns": ["pod_name", "node", "ready", "status", "restarts", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-ctrl-infra-pods-01", "node": "alpha-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-ctrl-infra-pods-02", "node": "alpha-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-ctrl-infra-pods-03", "node": "alpha-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-ctrl-infra-pods-04", "node": "alpha-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Beta": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-ctrl-infra-pods-01", "node": "beta-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-ctrl-infra-pods-02", "node": "beta-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-ctrl-infra-pods-03", "node": "beta-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-ctrl-infra-pods-04", "node": "beta-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Gamma": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-ctrl-infra-pods-01", "node": "gamma-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-ctrl-infra-pods-02", "node": "gamma-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-ctrl-infra-pods-03", "node": "gamma-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-ctrl-infra-pods-04", "node": "gamma-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}}}, "controller-olly-pods": {"name": "Controller OLLY NS Pods", "description": "Observability stack pods in ctrl-o11y namespace (Loki, Mimir, Grafana, alertmanager). If DOWN, logging and monitoring are impacted.", "status": "up", "summary": "1/1 healthy", "detail_type": "table", "columns": ["pod_name", "node", "ready", "status", "restarts", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "1/1 healthy", "data": [{"pod_name": "demo-controller-olly-pods-01", "node": "alpha-control-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}]}, "Site-Beta": {"status": "up", "summary": "1/1 healthy", "data": [{"pod_name": "demo-controller-olly-pods-01", "node": "beta-control-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}]}, "Site-Gamma": {"status": "up", "summary": "1/1 healthy", "data": [{"pod_name": "demo-controller-olly-pods-01", "node": "gamma-control-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}]}}}, "top-resource-pods": {"name": "Top Resource Pods", "description": "Top 30 pods ranked by CPU consumption. Identify resource-hungry workloads that may need limits tuned.", "status": "up", "summary": "4/4 healthy", "detail_type": "table", "columns": ["namespace", "pod_name", "cpu", "memory"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "4/4 healthy", "data": [{"namespace": "demo-services", "pod_name": "demo-top-resource-pods-01", "cpu": "110m", "memory": "512Mi"}, {"namespace": "demo-services", "pod_name": "demo-top-resource-pods-02", "cpu": "147m", "memory": "640Mi"}, {"namespace": "demo-services", "pod_name": "demo-top-resource-pods-03", "cpu": "184m", "memory": "768Mi"}, {"namespace": "demo-services", "pod_name": "demo-top-resource-pods-04", "cpu": "221m", "memory": "896Mi"}]}, "Site-Beta": {"status": "up", "summary": "4/4 healthy", "data": [{"namespace": "demo-services", "pod_name": "demo-top-resource-pods-01", "cpu": "110m", "memory": "512Mi"}, {"namespace": "demo-services", "pod_name": "demo-top-resource-pods-02", "cpu": "147m", "memory": "640Mi"}, {"namespace": "demo-services", "pod_name": "demo-top-resource-pods-03", "cpu": "184m", "memory": "768Mi"}, {"namespace": "demo-services", "pod_name": "demo-top-resource-pods-04", "cpu": "221m", "memory": "896Mi"}]}, "Site-Gamma": {"status": "up", "summary": "4/4 healthy", "data": [{"namespace": "demo-services", "pod_name": "demo-top-resource-pods-01", "cpu": "110m", "memory": "512Mi"}, {"namespace": "demo-services", "pod_name": "demo-top-resource-pods-02", "cpu": "147m", "memory": "640Mi"}, {"namespace": "demo-services", "pod_name": "demo-top-resource-pods-03", "cpu": "184m", "memory": "768Mi"}, {"namespace": "demo-services", "pod_name": "demo-top-resource-pods-04", "cpu": "221m", "memory": "896Mi"}]}}}, "traefik": {"name": "Platform Traefik", "description": "Ingress controller and reverse proxy on platform nodes. Routes external HTTP/HTTPS traffic into cluster services.", "status": "up", "summary": "4/4 healthy", "detail_type": "table", "columns": ["pod_name", "node", "ready", "status", "restarts", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-traefik-01", "node": "alpha-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-traefik-02", "node": "alpha-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-traefik-03", "node": "alpha-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-traefik-04", "node": "alpha-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Beta": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-traefik-01", "node": "beta-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-traefik-02", "node": "beta-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-traefik-03", "node": "beta-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-traefik-04", "node": "beta-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Gamma": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-traefik-01", "node": "gamma-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-traefik-02", "node": "gamma-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-traefik-03", "node": "gamma-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-traefik-04", "node": "gamma-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}}}, "controller-traefik": {"name": "Controller Traefik", "description": "Traefik ingress pods running on controller nodes. Handles external traffic routing for Controller services.", "status": "up", "summary": "1/1 healthy", "detail_type": "table", "columns": ["pod_name", "node", "ready", "status", "restarts", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "1/1 healthy", "data": [{"pod_name": "demo-controller-traefik-01", "node": "alpha-control-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}]}, "Site-Beta": {"status": "up", "summary": "1/1 healthy", "data": [{"pod_name": "demo-controller-traefik-01", "node": "beta-control-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}]}, "Site-Gamma": {"status": "up", "summary": "1/1 healthy", "data": [{"pod_name": "demo-controller-traefik-01", "node": "gamma-control-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}]}}}, "svclb-traefik": {"name": "Service LB", "description": "K3s service load balancer pods (one per node). Forward external traffic to Traefik.", "status": "up", "summary": "4/4 healthy", "detail_type": "table", "columns": ["pod_name", "node", "ready", "status", "restarts", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-svclb-traefik-01", "node": "alpha-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-svclb-traefik-02", "node": "alpha-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-svclb-traefik-03", "node": "alpha-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-svclb-traefik-04", "node": "alpha-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Beta": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-svclb-traefik-01", "node": "beta-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-svclb-traefik-02", "node": "beta-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-svclb-traefik-03", "node": "beta-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-svclb-traefik-04", "node": "beta-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Gamma": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-svclb-traefik-01", "node": "gamma-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-svclb-traefik-02", "node": "gamma-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-svclb-traefik-03", "node": "gamma-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-svclb-traefik-04", "node": "gamma-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}}}, "coredns": {"name": "CoreDNS", "description": "Cluster DNS service. Resolves service names to IPs within the cluster. Critical infrastructure.", "status": "up", "summary": "4/4 healthy", "detail_type": "table", "columns": ["pod_name", "node", "ready", "status", "restarts", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-coredns-01", "node": "alpha-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-coredns-02", "node": "alpha-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-coredns-03", "node": "alpha-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-coredns-04", "node": "alpha-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Beta": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-coredns-01", "node": "beta-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-coredns-02", "node": "beta-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-coredns-03", "node": "beta-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-coredns-04", "node": "beta-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Gamma": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-coredns-01", "node": "gamma-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-coredns-02", "node": "gamma-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-coredns-03", "node": "gamma-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-coredns-04", "node": "gamma-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}}}, "metrics-server": {"name": "Metrics Server", "description": "Provides CPU and memory usage metrics for nodes and pods (kubectl top). Required for HPA autoscaling.", "status": "up", "summary": "4/4 healthy", "detail_type": "table", "columns": ["pod_name", "node", "ready", "status", "restarts", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-metrics-server-01", "node": "alpha-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-metrics-server-02", "node": "alpha-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-metrics-server-03", "node": "alpha-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-metrics-server-04", "node": "alpha-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Beta": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-metrics-server-01", "node": "beta-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-metrics-server-02", "node": "beta-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-metrics-server-03", "node": "beta-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-metrics-server-04", "node": "beta-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Gamma": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-metrics-server-01", "node": "gamma-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-metrics-server-02", "node": "gamma-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-metrics-server-03", "node": "gamma-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-metrics-server-04", "node": "gamma-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}}}, "k8s-services": {"name": "K8s Services", "description": "All Kubernetes services (ClusterIP, NodePort, LoadBalancer). Stable network endpoints for pods.", "status": "up", "summary": "4/4 healthy", "detail_type": "table", "columns": ["namespace", "name", "type", "cluster_ip", "ports", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "4/4 healthy", "data": [{"namespace": "demo-services", "name": "demo-k8s-services-01", "type": "ClusterIP", "cluster_ip": "198.51.100.20", "ports": "8443/TCP", "age": "12d"}, {"namespace": "demo-services", "name": "demo-k8s-services-02", "type": "ClusterIP", "cluster_ip": "198.51.100.21", "ports": "8443/TCP", "age": "15d"}, {"namespace": "demo-services", "name": "demo-k8s-services-03", "type": "ClusterIP", "cluster_ip": "198.51.100.22", "ports": "8443/TCP", "age": "18d"}, {"namespace": "demo-services", "name": "demo-k8s-services-04", "type": "ClusterIP", "cluster_ip": "198.51.100.23", "ports": "8443/TCP", "age": "21d"}]}, "Site-Beta": {"status": "up", "summary": "4/4 healthy", "data": [{"namespace": "demo-services", "name": "demo-k8s-services-01", "type": "ClusterIP", "cluster_ip": "198.51.100.40", "ports": "8443/TCP", "age": "12d"}, {"namespace": "demo-services", "name": "demo-k8s-services-02", "type": "ClusterIP", "cluster_ip": "198.51.100.41", "ports": "8443/TCP", "age": "15d"}, {"namespace": "demo-services", "name": "demo-k8s-services-03", "type": "ClusterIP", "cluster_ip": "198.51.100.42", "ports": "8443/TCP", "age": "18d"}, {"namespace": "demo-services", "name": "demo-k8s-services-04", "type": "ClusterIP", "cluster_ip": "198.51.100.43", "ports": "8443/TCP", "age": "21d"}]}, "Site-Gamma": {"status": "up", "summary": "4/4 healthy", "data": [{"namespace": "demo-services", "name": "demo-k8s-services-01", "type": "ClusterIP", "cluster_ip": "198.51.100.60", "ports": "8443/TCP", "age": "12d"}, {"namespace": "demo-services", "name": "demo-k8s-services-02", "type": "ClusterIP", "cluster_ip": "198.51.100.61", "ports": "8443/TCP", "age": "15d"}, {"namespace": "demo-services", "name": "demo-k8s-services-03", "type": "ClusterIP", "cluster_ip": "198.51.100.62", "ports": "8443/TCP", "age": "18d"}, {"namespace": "demo-services", "name": "demo-k8s-services-04", "type": "ClusterIP", "cluster_ip": "198.51.100.63", "ports": "8443/TCP", "age": "21d"}]}}}, "astra-security": {"name": "Platform ASTRA Status", "description": "Wiz security scanning agents (CSO compliance) on platform nodes. Continuously scans containers for vulnerabilities.", "status": "up", "summary": "4/4 healthy", "detail_type": "table", "columns": ["pod_name", "node", "ready", "status", "restarts", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-astra-security-01", "node": "alpha-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-astra-security-02", "node": "alpha-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-astra-security-03", "node": "alpha-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-astra-security-04", "node": "alpha-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Beta": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-astra-security-01", "node": "beta-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-astra-security-02", "node": "beta-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-astra-security-03", "node": "beta-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-astra-security-04", "node": "beta-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Gamma": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-astra-security-01", "node": "gamma-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-astra-security-02", "node": "gamma-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-astra-security-03", "node": "gamma-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-astra-security-04", "node": "gamma-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}}}, "controller-astra": {"name": "Controller ASTRA Status", "description": "Wiz security scanning agents running on controller nodes. Monitors controller workloads for vulnerabilities.", "status": "up", "summary": "1/1 healthy", "detail_type": "table", "columns": ["pod_name", "node", "ready", "status", "restarts", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "1/1 healthy", "data": [{"pod_name": "demo-controller-astra-01", "node": "alpha-control-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}]}, "Site-Beta": {"status": "up", "summary": "1/1 healthy", "data": [{"pod_name": "demo-controller-astra-01", "node": "beta-control-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}]}, "Site-Gamma": {"status": "up", "summary": "1/1 healthy", "data": [{"pod_name": "demo-controller-astra-01", "node": "gamma-control-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}]}}}, "k8s-nodes": {"name": "K8s Nodes", "description": "All Kubernetes nodes (control-plane + workers). NotReady nodes cannot schedule pods.", "status": "down", "summary": "3/4 healthy", "detail_type": "table", "columns": ["node_name", "status", "roles", "age", "version", "internal_ip"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "4/4 healthy", "data": [{"node_name": "alpha-compute-01", "status": "Ready", "roles": "worker", "age": "12d", "version": "v1.32.4+k3s1", "internal_ip": "192.0.2.20"}, {"node_name": "alpha-compute-02", "status": "Ready", "roles": "worker", "age": "15d", "version": "v1.32.4+k3s1", "internal_ip": "192.0.2.21"}, {"node_name": "alpha-compute-03", "status": "Ready", "roles": "worker", "age": "18d", "version": "v1.32.4+k3s1", "internal_ip": "192.0.2.22"}, {"node_name": "alpha-control-01", "status": "Ready", "roles": "control-plane", "age": "21d", "version": "v1.32.4+k3s1", "internal_ip": "192.0.2.23"}]}, "Site-Beta": {"status": "up", "summary": "4/4 healthy", "data": [{"node_name": "beta-compute-01", "status": "Ready", "roles": "worker", "age": "12d", "version": "v1.32.4+k3s1", "internal_ip": "192.0.2.40"}, {"node_name": "beta-compute-02", "status": "Ready", "roles": "worker", "age": "15d", "version": "v1.32.4+k3s1", "internal_ip": "192.0.2.41"}, {"node_name": "beta-compute-03", "status": "Ready", "roles": "worker", "age": "18d", "version": "v1.32.4+k3s1", "internal_ip": "192.0.2.42"}, {"node_name": "beta-control-01", "status": "Ready", "roles": "control-plane", "age": "21d", "version": "v1.32.4+k3s1", "internal_ip": "192.0.2.43"}]}, "Site-Gamma": {"status": "down", "summary": "3/4 healthy", "data": [{"node_name": "gamma-compute-01", "status": "NotReady", "roles": "worker", "age": "12d", "version": "v1.32.4+k3s1", "internal_ip": "192.0.2.60"}, {"node_name": "gamma-compute-02", "status": "Ready", "roles": "worker", "age": "15d", "version": "v1.32.4+k3s1", "internal_ip": "192.0.2.61"}, {"node_name": "gamma-compute-03", "status": "Ready", "roles": "worker", "age": "18d", "version": "v1.32.4+k3s1", "internal_ip": "192.0.2.62"}, {"node_name": "gamma-control-01", "status": "Ready", "roles": "control-plane", "age": "21d", "version": "v1.32.4+k3s1", "internal_ip": "192.0.2.63"}]}}}, "daemonsets": {"name": "DaemonSets", "description": "Workloads that must run on every node. Desired should equal Ready; mismatch means a node is missing a pod.", "status": "down", "summary": "3/4 healthy", "detail_type": "table", "columns": ["namespace", "name", "desired", "current", "ready", "available", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "4/4 healthy", "data": [{"namespace": "demo-services", "name": "demo-daemonsets-01", "desired": "4", "current": "4", "ready": "4", "available": "4", "age": "12d"}, {"namespace": "demo-services", "name": "demo-daemonsets-02", "desired": "4", "current": "4", "ready": "4", "available": "4", "age": "15d"}, {"namespace": "demo-services", "name": "demo-daemonsets-03", "desired": "4", "current": "4", "ready": "4", "available": "4", "age": "18d"}, {"namespace": "demo-services", "name": "demo-daemonsets-04", "desired": "4", "current": "4", "ready": "4", "available": "4", "age": "21d"}]}, "Site-Beta": {"status": "down", "summary": "3/4 healthy", "data": [{"namespace": "demo-services", "name": "demo-daemonsets-01", "desired": "4", "current": "4", "ready": "3", "available": "3", "age": "12d"}, {"namespace": "demo-services", "name": "demo-daemonsets-02", "desired": "4", "current": "4", "ready": "4", "available": "4", "age": "15d"}, {"namespace": "demo-services", "name": "demo-daemonsets-03", "desired": "4", "current": "4", "ready": "4", "available": "4", "age": "18d"}, {"namespace": "demo-services", "name": "demo-daemonsets-04", "desired": "4", "current": "4", "ready": "4", "available": "4", "age": "21d"}]}, "Site-Gamma": {"status": "down", "summary": "3/4 healthy", "data": [{"namespace": "demo-services", "name": "demo-daemonsets-01", "desired": "4", "current": "4", "ready": "3", "available": "3", "age": "12d"}, {"namespace": "demo-services", "name": "demo-daemonsets-02", "desired": "4", "current": "4", "ready": "4", "available": "4", "age": "15d"}, {"namespace": "demo-services", "name": "demo-daemonsets-03", "desired": "4", "current": "4", "ready": "4", "available": "4", "age": "18d"}, {"namespace": "demo-services", "name": "demo-daemonsets-04", "desired": "4", "current": "4", "ready": "4", "available": "4", "age": "21d"}]}}}, "platform-version": {"name": "Platform K3s Status", "description": "K3s version on platform nodes from kubectl version. Mixed versions can cause API incompatibilities.", "status": "warn", "summary": "2 versions mixed", "detail_type": "table", "columns": ["node_name", "version", "roles", "status", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "warn", "summary": "2 versions mixed", "data": [{"node_name": "alpha-compute-01", "version": "v1.31.8+k3s1", "roles": "worker", "status": "Ready", "age": "12d"}, {"node_name": "alpha-compute-02", "version": "v1.32.4+k3s1", "roles": "worker", "status": "Ready", "age": "15d"}, {"node_name": "alpha-compute-03", "version": "v1.32.4+k3s1", "roles": "worker", "status": "Ready", "age": "18d"}, {"node_name": "alpha-control-01", "version": "v1.32.4+k3s1", "roles": "control-plane", "status": "Ready", "age": "21d"}]}, "Site-Beta": {"status": "up", "summary": "v1.32.4+k3s1", "data": [{"node_name": "beta-compute-01", "version": "v1.32.4+k3s1", "roles": "worker", "status": "Ready", "age": "12d"}, {"node_name": "beta-compute-02", "version": "v1.32.4+k3s1", "roles": "worker", "status": "Ready", "age": "15d"}, {"node_name": "beta-compute-03", "version": "v1.32.4+k3s1", "roles": "worker", "status": "Ready", "age": "18d"}, {"node_name": "beta-control-01", "version": "v1.32.4+k3s1", "roles": "control-plane", "status": "Ready", "age": "21d"}]}, "Site-Gamma": {"status": "warn", "summary": "2 versions mixed", "data": [{"node_name": "gamma-compute-01", "version": "v1.31.8+k3s1", "roles": "worker", "status": "Ready", "age": "12d"}, {"node_name": "gamma-compute-02", "version": "v1.32.4+k3s1", "roles": "worker", "status": "Ready", "age": "15d"}, {"node_name": "gamma-compute-03", "version": "v1.32.4+k3s1", "roles": "worker", "status": "Ready", "age": "18d"}, {"node_name": "gamma-control-01", "version": "v1.32.4+k3s1", "roles": "control-plane", "status": "Ready", "age": "21d"}]}}}, "controller-version": {"name": "Controller K3s Status", "description": "K3s version on controller nodes from kubectl version. Should match Platform cluster version for compatibility.", "status": "up", "summary": "v1.32.4+k3s1", "detail_type": "table", "columns": ["node_name", "version", "roles", "status", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "v1.32.4+k3s1", "data": [{"node_name": "alpha-control-01", "version": "v1.32.4+k3s1", "roles": "control-plane", "status": "Ready", "age": "12d"}]}, "Site-Beta": {"status": "up", "summary": "v1.32.4+k3s1", "data": [{"node_name": "beta-control-01", "version": "v1.32.4+k3s1", "roles": "control-plane", "status": "Ready", "age": "12d"}]}, "Site-Gamma": {"status": "up", "summary": "v1.32.4+k3s1", "data": [{"node_name": "gamma-control-01", "version": "v1.32.4+k3s1", "roles": "control-plane", "status": "Ready", "age": "12d"}]}}}, "etcd-snapshots": {"name": "etcd Snapshots", "description": "K3s automatic etcd snapshots protect cluster state. Verifies snapshots exist and are recent (< 24h).", "status": "nodata", "summary": "Not sampled in this demo snapshot", "detail_type": "table", "columns": ["name", "size", "date"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "nodata", "summary": "Not sampled in this demo snapshot", "data": []}, "Site-Beta": {"status": "nodata", "summary": "Not sampled in this demo snapshot", "data": []}, "Site-Gamma": {"status": "nodata", "summary": "Not sampled in this demo snapshot", "data": []}}}, "platform-vms": {"name": "Platform VMs Health Status", "description": "SSH reachability of the Platform control-plane VMs. 'Unreachable' means the collector could not SSH to the host \u2014 the host itself may be healthy.", "status": "up", "summary": "3/3 reachable", "detail_type": "table", "columns": ["hostname", "status"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "3/3 reachable", "data": [{"hostname": "alpha-compute-01", "status": "up"}, {"hostname": "alpha-compute-02", "status": "up"}, {"hostname": "alpha-compute-03", "status": "up"}]}, "Site-Beta": {"status": "up", "summary": "3/3 reachable", "data": [{"hostname": "beta-compute-01", "status": "up"}, {"hostname": "beta-compute-02", "status": "up"}, {"hostname": "beta-compute-03", "status": "up"}]}, "Site-Gamma": {"status": "up", "summary": "3/3 reachable", "data": [{"hostname": "gamma-compute-01", "status": "up"}, {"hostname": "gamma-compute-02", "status": "up"}, {"hostname": "gamma-compute-03", "status": "up"}]}}}, "controller-vms": {"name": "Controller VMs Health Status", "description": "SSH reachability of the controller VM. 'Unreachable' means the collector could not SSH to the host \u2014 the host itself may be healthy.", "status": "up", "summary": "1/1 reachable", "detail_type": "table", "columns": ["hostname", "status"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "1/1 reachable", "data": [{"hostname": "alpha-control-01", "status": "up"}]}, "Site-Beta": {"status": "up", "summary": "1/1 reachable", "data": [{"hostname": "beta-control-01", "status": "up"}]}, "Site-Gamma": {"status": "up", "summary": "1/1 reachable", "data": [{"hostname": "gamma-control-01", "status": "up"}]}}}, "kube-system": {"name": "Kube-System", "description": "Core cluster infrastructure namespace. Contains DNS, ingress, metrics, cert-manager, and Helm install jobs.", "status": "up", "summary": "4/4 healthy", "detail_type": "table", "columns": ["pod_name", "node", "ready", "status", "restarts", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-kube-system-01", "node": "alpha-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-kube-system-02", "node": "alpha-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-kube-system-03", "node": "alpha-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-kube-system-04", "node": "alpha-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Beta": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-kube-system-01", "node": "beta-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-kube-system-02", "node": "beta-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-kube-system-03", "node": "beta-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-kube-system-04", "node": "beta-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Gamma": {"status": "up", "summary": "4/4 healthy", "data": [{"pod_name": "demo-kube-system-01", "node": "gamma-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"pod_name": "demo-kube-system-02", "node": "gamma-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"pod_name": "demo-kube-system-03", "node": "gamma-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"pod_name": "demo-kube-system-04", "node": "gamma-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}}}, "platform-job-status": {"name": "Platform K8 Job Status", "description": "Kubernetes Jobs on the Platform cluster. Failed or incomplete jobs may indicate deployment issues.", "status": "up", "summary": "4/4 healthy", "detail_type": "table", "columns": ["namespace", "name", "completions", "duration", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "4/4 healthy", "data": [{"namespace": "demo-services", "name": "demo-platform-job-status-01", "completions": "1/1", "duration": "32s", "age": "12d"}, {"namespace": "demo-services", "name": "demo-platform-job-status-02", "completions": "1/1", "duration": "41s", "age": "15d"}, {"namespace": "demo-services", "name": "demo-platform-job-status-03", "completions": "1/1", "duration": "50s", "age": "18d"}, {"namespace": "demo-services", "name": "demo-platform-job-status-04", "completions": "1/1", "duration": "59s", "age": "21d"}]}, "Site-Beta": {"status": "up", "summary": "4/4 healthy", "data": [{"namespace": "demo-services", "name": "demo-platform-job-status-01", "completions": "1/1", "duration": "32s", "age": "12d"}, {"namespace": "demo-services", "name": "demo-platform-job-status-02", "completions": "1/1", "duration": "41s", "age": "15d"}, {"namespace": "demo-services", "name": "demo-platform-job-status-03", "completions": "1/1", "duration": "50s", "age": "18d"}, {"namespace": "demo-services", "name": "demo-platform-job-status-04", "completions": "1/1", "duration": "59s", "age": "21d"}]}, "Site-Gamma": {"status": "up", "summary": "4/4 healthy", "data": [{"namespace": "demo-services", "name": "demo-platform-job-status-01", "completions": "1/1", "duration": "32s", "age": "12d"}, {"namespace": "demo-services", "name": "demo-platform-job-status-02", "completions": "1/1", "duration": "41s", "age": "15d"}, {"namespace": "demo-services", "name": "demo-platform-job-status-03", "completions": "1/1", "duration": "50s", "age": "18d"}, {"namespace": "demo-services", "name": "demo-platform-job-status-04", "completions": "1/1", "duration": "59s", "age": "21d"}]}}}, "controller-job-status": {"name": "Controller K8 Job Status", "description": "Kubernetes Jobs in controller namespaces. Failed jobs may indicate broken infrastructure deployments.", "status": "up", "summary": "1/1 healthy", "detail_type": "table", "columns": ["namespace", "name", "completions", "duration", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "1/1 healthy", "data": [{"namespace": "demo-services", "name": "demo-controller-job-status-01", "completions": "1/1", "duration": "32s", "age": "12d"}]}, "Site-Beta": {"status": "up", "summary": "1/1 healthy", "data": [{"namespace": "demo-services", "name": "demo-controller-job-status-01", "completions": "1/1", "duration": "32s", "age": "12d"}]}, "Site-Gamma": {"status": "up", "summary": "1/1 healthy", "data": [{"namespace": "demo-services", "name": "demo-controller-job-status-01", "completions": "1/1", "duration": "32s", "age": "12d"}]}}}, "cpu-utilization": {"name": "CPU Utilization", "description": "Host-level CPU usage. Sustained >80% indicates capacity pressure; >95% is critical.", "status": "down", "summary": "Peak 97%", "detail_type": "chart", "columns": ["hostname", "cpu_percent", "load_avg"], "chart_field": "cpu_percent", "chart_label": "CPU %", "locations": {"Site-Alpha": {"status": "down", "summary": "Peak 97%", "data": [{"hostname": "alpha-compute-01", "cpu_percent": "97", "load_avg": "1.2 0.9 0.7"}, {"hostname": "alpha-compute-02", "cpu_percent": "46", "load_avg": "1.5 0.9 0.7"}, {"hostname": "alpha-compute-03", "cpu_percent": "28", "load_avg": "1.8 0.9 0.7"}, {"hostname": "alpha-control-01", "cpu_percent": "19", "load_avg": "2.1 0.9 0.7"}]}, "Site-Beta": {"status": "up", "summary": "Peak 52%", "data": [{"hostname": "beta-compute-01", "cpu_percent": "34", "load_avg": "1.2 0.9 0.7"}, {"hostname": "beta-compute-02", "cpu_percent": "52", "load_avg": "1.5 0.9 0.7"}, {"hostname": "beta-compute-03", "cpu_percent": "23", "load_avg": "1.8 0.9 0.7"}, {"hostname": "beta-control-01", "cpu_percent": "16", "load_avg": "2.1 0.9 0.7"}]}, "Site-Gamma": {"status": "warn", "summary": "Peak 87%", "data": [{"hostname": "gamma-compute-01", "cpu_percent": "87", "load_avg": "1.2 0.9 0.7"}, {"hostname": "gamma-compute-02", "cpu_percent": "42", "load_avg": "1.5 0.9 0.7"}, {"hostname": "gamma-compute-03", "cpu_percent": "31", "load_avg": "1.8 0.9 0.7"}, {"hostname": "gamma-control-01", "cpu_percent": "24", "load_avg": "2.1 0.9 0.7"}]}}}, "memory-utilization": {"name": "Memory Utilization", "description": "Host-level RAM usage. >85% warrants investigation; >95% causes pod eviction.", "status": "down", "summary": "Peak 98%", "detail_type": "chart", "columns": ["hostname", "mem_percent", "mem_used_mb", "mem_total_mb", "mem_free_mb"], "chart_field": "mem_percent", "chart_label": "Memory %", "locations": {"Site-Alpha": {"status": "up", "summary": "Peak 61%", "data": [{"hostname": "alpha-compute-01", "mem_percent": "43", "mem_used_mb": "14090", "mem_total_mb": "32768", "mem_free_mb": "18678"}, {"hostname": "alpha-compute-02", "mem_percent": "61", "mem_used_mb": "19988", "mem_total_mb": "32768", "mem_free_mb": "12780"}, {"hostname": "alpha-compute-03", "mem_percent": "38", "mem_used_mb": "12452", "mem_total_mb": "32768", "mem_free_mb": "20316"}, {"hostname": "alpha-control-01", "mem_percent": "29", "mem_used_mb": "9503", "mem_total_mb": "32768", "mem_free_mb": "23265"}]}, "Site-Beta": {"status": "warn", "summary": "Peak 89%", "data": [{"hostname": "beta-compute-01", "mem_percent": "89", "mem_used_mb": "29164", "mem_total_mb": "32768", "mem_free_mb": "3604"}, {"hostname": "beta-compute-02", "mem_percent": "58", "mem_used_mb": "19005", "mem_total_mb": "32768", "mem_free_mb": "13763"}, {"hostname": "beta-compute-03", "mem_percent": "42", "mem_used_mb": "13763", "mem_total_mb": "32768", "mem_free_mb": "19005"}, {"hostname": "beta-control-01", "mem_percent": "35", "mem_used_mb": "11469", "mem_total_mb": "32768", "mem_free_mb": "21299"}]}, "Site-Gamma": {"status": "down", "summary": "Peak 98%", "data": [{"hostname": "gamma-compute-01", "mem_percent": "98", "mem_used_mb": "32113", "mem_total_mb": "32768", "mem_free_mb": "655"}, {"hostname": "gamma-compute-02", "mem_percent": "63", "mem_used_mb": "20644", "mem_total_mb": "32768", "mem_free_mb": "12124"}, {"hostname": "gamma-compute-03", "mem_percent": "47", "mem_used_mb": "15401", "mem_total_mb": "32768", "mem_free_mb": "17367"}, {"hostname": "gamma-control-01", "mem_percent": "33", "mem_used_mb": "10813", "mem_total_mb": "32768", "mem_free_mb": "21955"}]}}}, "disk-utilization": {"name": "Disk Utilization", "description": "Root filesystem usage. >85% requires cleanup; >95% causes pod failures and etcd corruption.", "status": "up", "summary": "Peak 57%", "detail_type": "chart", "columns": ["hostname", "disk_percent", "disk_used", "disk_free"], "chart_field": "disk_percent", "chart_label": "Disk %", "locations": {"Site-Alpha": {"status": "up", "summary": "Peak 57%", "data": [{"hostname": "alpha-compute-01", "disk_percent": "33%", "disk_used": "66G", "disk_free": "134G"}, {"hostname": "alpha-compute-02", "disk_percent": "41%", "disk_used": "82G", "disk_free": "118G"}, {"hostname": "alpha-compute-03", "disk_percent": "49%", "disk_used": "98G", "disk_free": "102G"}, {"hostname": "alpha-control-01", "disk_percent": "57%", "disk_used": "114G", "disk_free": "86G"}]}, "Site-Beta": {"status": "up", "summary": "Peak 57%", "data": [{"hostname": "beta-compute-01", "disk_percent": "33%", "disk_used": "66G", "disk_free": "134G"}, {"hostname": "beta-compute-02", "disk_percent": "41%", "disk_used": "82G", "disk_free": "118G"}, {"hostname": "beta-compute-03", "disk_percent": "49%", "disk_used": "98G", "disk_free": "102G"}, {"hostname": "beta-control-01", "disk_percent": "57%", "disk_used": "114G", "disk_free": "86G"}]}, "Site-Gamma": {"status": "up", "summary": "Peak 57%", "data": [{"hostname": "gamma-compute-01", "disk_percent": "33%", "disk_used": "66G", "disk_free": "134G"}, {"hostname": "gamma-compute-02", "disk_percent": "41%", "disk_used": "82G", "disk_free": "118G"}, {"hostname": "gamma-compute-03", "disk_percent": "49%", "disk_used": "98G", "disk_free": "102G"}, {"hostname": "gamma-control-01", "disk_percent": "57%", "disk_used": "114G", "disk_free": "86G"}]}}}, "load-average": {"name": "Load Average", "description": "1-minute load average per host. Values exceeding CPU core count indicate overload.", "status": "up", "summary": "Peak 1-minute load: 2.1", "detail_type": "table", "columns": ["hostname", "cpu_percent", "load_avg", "mem_percent"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "Peak 1-minute load: 2.1", "data": [{"hostname": "alpha-compute-01", "cpu_percent": "97", "load_avg": "1.2 0.9 0.7", "mem_percent": "43"}, {"hostname": "alpha-compute-02", "cpu_percent": "46", "load_avg": "1.5 0.9 0.7", "mem_percent": "61"}, {"hostname": "alpha-compute-03", "cpu_percent": "28", "load_avg": "1.8 0.9 0.7", "mem_percent": "38"}, {"hostname": "alpha-control-01", "cpu_percent": "19", "load_avg": "2.1 0.9 0.7", "mem_percent": "29"}]}, "Site-Beta": {"status": "up", "summary": "Peak 1-minute load: 2.1", "data": [{"hostname": "beta-compute-01", "cpu_percent": "34", "load_avg": "1.2 0.9 0.7", "mem_percent": "89"}, {"hostname": "beta-compute-02", "cpu_percent": "52", "load_avg": "1.5 0.9 0.7", "mem_percent": "58"}, {"hostname": "beta-compute-03", "cpu_percent": "23", "load_avg": "1.8 0.9 0.7", "mem_percent": "42"}, {"hostname": "beta-control-01", "cpu_percent": "16", "load_avg": "2.1 0.9 0.7", "mem_percent": "35"}]}, "Site-Gamma": {"status": "up", "summary": "Peak 1-minute load: 2.1", "data": [{"hostname": "gamma-compute-01", "cpu_percent": "87", "load_avg": "1.2 0.9 0.7", "mem_percent": "98"}, {"hostname": "gamma-compute-02", "cpu_percent": "42", "load_avg": "1.5 0.9 0.7", "mem_percent": "63"}, {"hostname": "gamma-compute-03", "cpu_percent": "31", "load_avg": "1.8 0.9 0.7", "mem_percent": "47"}, {"hostname": "gamma-control-01", "cpu_percent": "24", "load_avg": "2.1 0.9 0.7", "mem_percent": "33"}]}}}, "k8s-node-cpu": {"name": "K8s Node CPU", "description": "Kubernetes-reported CPU per node (kubectl top). High values mean new pods may not schedule.", "status": "down", "summary": "Peak 97%", "detail_type": "chart", "columns": ["node_name", "cpu_cores", "cpu_percent", "memory", "memory_percent"], "chart_field": "cpu_percent", "chart_label": "CPU %", "locations": {"Site-Alpha": {"status": "down", "summary": "Peak 97%", "data": [{"node_name": "alpha-compute-01", "cpu_cores": "3880m", "cpu_percent": "97", "memory": "512Mi", "memory_percent": "43%"}, {"node_name": "alpha-compute-02", "cpu_cores": "1840m", "cpu_percent": "46", "memory": "640Mi", "memory_percent": "61%"}, {"node_name": "alpha-compute-03", "cpu_cores": "1120m", "cpu_percent": "28", "memory": "768Mi", "memory_percent": "38%"}, {"node_name": "alpha-control-01", "cpu_cores": "760m", "cpu_percent": "19", "memory": "896Mi", "memory_percent": "29%"}]}, "Site-Beta": {"status": "up", "summary": "Peak 52%", "data": [{"node_name": "beta-compute-01", "cpu_cores": "1360m", "cpu_percent": "34", "memory": "512Mi", "memory_percent": "89%"}, {"node_name": "beta-compute-02", "cpu_cores": "2080m", "cpu_percent": "52", "memory": "640Mi", "memory_percent": "58%"}, {"node_name": "beta-compute-03", "cpu_cores": "920m", "cpu_percent": "23", "memory": "768Mi", "memory_percent": "42%"}, {"node_name": "beta-control-01", "cpu_cores": "640m", "cpu_percent": "16", "memory": "896Mi", "memory_percent": "35%"}]}, "Site-Gamma": {"status": "warn", "summary": "Peak 87%", "data": [{"node_name": "gamma-compute-01", "cpu_cores": "3480m", "cpu_percent": "87", "memory": "512Mi", "memory_percent": "98%"}, {"node_name": "gamma-compute-02", "cpu_cores": "1680m", "cpu_percent": "42", "memory": "640Mi", "memory_percent": "63%"}, {"node_name": "gamma-compute-03", "cpu_cores": "1240m", "cpu_percent": "31", "memory": "768Mi", "memory_percent": "47%"}, {"node_name": "gamma-control-01", "cpu_cores": "960m", "cpu_percent": "24", "memory": "896Mi", "memory_percent": "33%"}]}}}, "pod-health": {"name": "Pod Health", "description": "Overall pod status. Shows pods NOT in Running/Completed state. These need immediate investigation.", "status": "warn", "summary": "3/4 healthy", "detail_type": "table", "columns": ["namespace", "pod_name", "node", "ready", "status", "restarts", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "4/4 healthy", "data": [{"namespace": "demo-services", "pod_name": "demo-pod-health-01", "node": "alpha-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"namespace": "demo-services", "pod_name": "demo-pod-health-02", "node": "alpha-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"namespace": "demo-services", "pod_name": "demo-pod-health-03", "node": "alpha-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"namespace": "demo-services", "pod_name": "demo-pod-health-04", "node": "alpha-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Beta": {"status": "up", "summary": "4/4 healthy", "data": [{"namespace": "demo-services", "pod_name": "demo-pod-health-01", "node": "beta-compute-01", "ready": "1/1", "status": "Running", "restarts": "0", "age": "12d"}, {"namespace": "demo-services", "pod_name": "demo-pod-health-02", "node": "beta-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"namespace": "demo-services", "pod_name": "demo-pod-health-03", "node": "beta-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"namespace": "demo-services", "pod_name": "demo-pod-health-04", "node": "beta-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}, "Site-Gamma": {"status": "warn", "summary": "3/4 healthy", "data": [{"namespace": "demo-services", "pod_name": "demo-argocd-01", "node": "gamma-compute-01", "ready": "0/1", "status": "CrashLoopBackOff", "restarts": "8", "age": "12d"}, {"namespace": "demo-services", "pod_name": "demo-pod-health-02", "node": "gamma-compute-02", "ready": "1/1", "status": "Running", "restarts": "1", "age": "15d"}, {"namespace": "demo-services", "pod_name": "demo-pod-health-03", "node": "gamma-compute-03", "ready": "1/1", "status": "Running", "restarts": "0", "age": "18d"}, {"namespace": "demo-services", "pod_name": "demo-pod-health-04", "node": "gamma-control-01", "ready": "1/1", "status": "Running", "restarts": "1", "age": "21d"}]}}}, "high-restarts": {"name": "High Restart Pods", "description": "Pods restarted >5 times. Indicates crash loops, OOM kills, or misconfiguration.", "status": "warn", "summary": "1 pod >5 restarts", "detail_type": "table", "columns": ["namespace", "pod_name", "node", "status", "restarts", "age"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "0 pods >5 restarts", "data": []}, "Site-Beta": {"status": "up", "summary": "0 pods >5 restarts", "data": []}, "Site-Gamma": {"status": "warn", "summary": "1 pod >5 restarts", "data": [{"namespace": "demo-services", "pod_name": "demo-argocd-01", "node": "gamma-compute-01", "status": "CrashLoopBackOff", "restarts": "8", "age": "12d"}]}}}, "platform-k8s-mgmt-certs": {"name": "Platform K8S MGMT Certs", "description": "K3s internal management certificates (API server, etcd, client CA). WARN if expiry <60 days. Expired certs break cluster communication.", "status": "up", "summary": "2 certificates valid", "detail_type": "table", "columns": ["name", "expiry", "source", "secret"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "2 certificates valid", "data": [{"name": "demo-platform-k8s-mgmt-certs-01", "expiry": "2031-07-18T00:00:00Z", "source": "demo-ca", "secret": "demo-services/demo-tls-01"}, {"name": "demo-platform-k8s-mgmt-certs-02", "expiry": "2031-07-18T00:00:00Z", "source": "demo-ca", "secret": "demo-services/demo-tls-02"}]}, "Site-Beta": {"status": "up", "summary": "2 certificates valid", "data": [{"name": "demo-platform-k8s-mgmt-certs-01", "expiry": "2031-07-18T00:00:00Z", "source": "demo-ca", "secret": "demo-services/demo-tls-01"}, {"name": "demo-platform-k8s-mgmt-certs-02", "expiry": "2031-07-18T00:00:00Z", "source": "demo-ca", "secret": "demo-services/demo-tls-02"}]}, "Site-Gamma": {"status": "up", "summary": "2 certificates valid", "data": [{"name": "demo-platform-k8s-mgmt-certs-01", "expiry": "2031-07-18T00:00:00Z", "source": "demo-ca", "secret": "demo-services/demo-tls-01"}, {"name": "demo-platform-k8s-mgmt-certs-02", "expiry": "2031-07-18T00:00:00Z", "source": "demo-ca", "secret": "demo-services/demo-tls-02"}]}}}, "controller-k8s-mgmt-certs": {"name": "Controller K8S MGMT Certs", "description": "K3s/cert-manager management certificates for Controller cluster. WARN if expiry <60 days. Not-Ready means issuance/renewal failed.", "status": "warn", "summary": "1 certificate: 20 days remaining", "detail_type": "table", "columns": ["name", "expiry", "source", "secret"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "warn", "summary": "1 certificate: 20 days remaining", "data": [{"name": "demo-controller-k8s-mgmt-certs-01", "expiry": "2030-05-06T00:00:00Z", "source": "demo-ca", "secret": "demo-services/demo-tls-01"}]}, "Site-Beta": {"status": "up", "summary": "1 certificate valid", "data": [{"name": "demo-controller-k8s-mgmt-certs-01", "expiry": "2031-07-18T00:00:00Z", "source": "demo-ca", "secret": "demo-services/demo-tls-01"}]}, "Site-Gamma": {"status": "warn", "summary": "1 certificate: 20 days remaining", "data": [{"name": "demo-controller-k8s-mgmt-certs-01", "expiry": "2030-05-06T00:00:00Z", "source": "demo-ca", "secret": "demo-services/demo-tls-01"}]}}}, "sbi-mgmt-certs": {"name": "SBI MGMT Certs", "description": "TLS certificates for SBI controllers. WARN if expiry <60 days. Expired certs break southbound device connections.", "status": "nodata", "summary": "Not sampled in this demo snapshot", "detail_type": "table", "columns": ["name", "expiry", "secret"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "nodata", "summary": "Not sampled in this demo snapshot", "data": []}, "Site-Beta": {"status": "nodata", "summary": "Not sampled in this demo snapshot", "data": []}, "Site-Gamma": {"status": "nodata", "summary": "Not sampled in this demo snapshot", "data": []}}}, "ingress-certs": {"name": "Platform Ingress Certs", "description": "TLS certificates on ingress endpoints (HTTPS termination). WARN if expiry <60 days. Expired certs cause browser warnings and API TLS failures. Type column shows whether the cert is referenced by an Ingress resource or is an internal cluster TLS secret.", "status": "up", "summary": "2 certificates valid", "detail_type": "table", "columns": ["type", "namespace", "name", "expiry", "secret"], "chart_field": "", "chart_label": "", "locations": {"Site-Alpha": {"status": "up", "summary": "2 certificates valid", "data": [{"type": "ClusterIP", "namespace": "demo-services", "name": "demo-ingress-certs-01", "expiry": "2031-07-18T00:00:00Z", "secret": "demo-services/demo-tls-01"}, {"type": "ClusterIP", "namespace": "demo-services", "name": "demo-ingress-certs-02", "expiry": "2031-07-18T00:00:00Z", "secret": "demo-services/demo-tls-02"}]}, "Site-Beta": {"status": "up", "summary": "2 certificates valid", "data": [{"type": "ClusterIP", "namespace": "demo-services", "name": "demo-ingress-certs-01", "expiry": "2031-07-18T00:00:00Z", "secret": "demo-services/demo-tls-01"}, {"type": "ClusterIP", "namespace": "demo-services", "name": "demo-ingress-certs-02", "expiry": "2031-07-18T00:00:00Z", "secret": "demo-services/demo-tls-02"}]}, "Site-Gamma": {"status": "up", "summary": "2 certificates valid", "data": [{"type": "ClusterIP", "namespace": "demo-services", "name": "demo-ingress-certs-01", "expiry": "2031-07-18T00:00:00Z", "secret": "demo-services/demo-tls-01"}, {"type": "ClusterIP", "namespace": "demo-services", "name": "demo-ingress-certs-02", "expiry": "2031-07-18T00:00:00Z", "secret": "demo-services/demo-tls-02"}]}}}, "k8s-node-memory": {"name": "K8s Node Memory", "description": "Kubernetes-reported memory per node. Exceeding capacity triggers pod eviction.", "status": "down", "summary": "Peak 98%", "detail_type": "chart", "columns": ["node_name", "cpu_cores", "cpu_percent", "memory", "memory_percent"], "chart_field": "memory_percent", "chart_label": "Memory %", "locations": {"Site-Alpha": {"status": "up", "summary": "Peak 61%", "data": [{"node_name": "alpha-compute-01", "cpu_cores": "3880m", "cpu_percent": "97", "memory": "512Mi", "memory_percent": "43%"}, {"node_name": "alpha-compute-02", "cpu_cores": "1840m", "cpu_percent": "46", "memory": "640Mi", "memory_percent": "61%"}, {"node_name": "alpha-compute-03", "cpu_cores": "1120m", "cpu_percent": "28", "memory": "768Mi", "memory_percent": "38%"}, {"node_name": "alpha-control-01", "cpu_cores": "760m", "cpu_percent": "19", "memory": "896Mi", "memory_percent": "29%"}]}, "Site-Beta": {"status": "warn", "summary": "Peak 89%", "data": [{"node_name": "beta-compute-01", "cpu_cores": "1360m", "cpu_percent": "34", "memory": "512Mi", "memory_percent": "89%"}, {"node_name": "beta-compute-02", "cpu_cores": "2080m", "cpu_percent": "52", "memory": "640Mi", "memory_percent": "58%"}, {"node_name": "beta-compute-03", "cpu_cores": "920m", "cpu_percent": "23", "memory": "768Mi", "memory_percent": "42%"}, {"node_name": "beta-control-01", "cpu_cores": "640m", "cpu_percent": "16", "memory": "896Mi", "memory_percent": "35%"}]}, "Site-Gamma": {"status": "down", "summary": "Peak 98%", "data": [{"node_name": "gamma-compute-01", "cpu_cores": "3480m", "cpu_percent": "87", "memory": "512Mi", "memory_percent": "98%"}, {"node_name": "gamma-compute-02", "cpu_cores": "1680m", "cpu_percent": "42", "memory": "640Mi", "memory_percent": "63%"}, {"node_name": "gamma-compute-03", "cpu_cores": "1240m", "cpu_percent": "31", "memory": "768Mi", "memory_percent": "47%"}, {"node_name": "gamma-control-01", "cpu_cores": "960m", "cpu_percent": "24", "memory": "896Mi", "memory_percent": "33%"}]}}}};
+
+let currentCharts = [];
+
+function showGrid() {
+    document.getElementById('gridView').style.display = '';
+    document.getElementById('detailView').classList.remove('active');
+    document.getElementById('aboutView').classList.remove('active');
+    currentCharts.forEach(c => c.destroy());
+    currentCharts = [];
+    window.location.hash = '';
+}
+
+function showAbout() {
+    document.getElementById('gridView').style.display = 'none';
+    document.getElementById('detailView').classList.remove('active');
+    document.getElementById('aboutView').classList.add('active');
+    window.location.hash = 'about';
+}
+
+function hideAbout() {
+    document.getElementById('aboutView').classList.remove('active');
+    document.getElementById('gridView').style.display = '';
+    window.location.hash = '';
+}
+
+function showDetail(id) {
+    const d = DETAILS[id];
+    if (!d) return;
+
+    document.getElementById('gridView').style.display = 'none';
+    document.getElementById('aboutView').classList.remove('active');
+    document.getElementById('detailView').classList.add('active');
+
+    // Status badge
+    const statusEl = document.getElementById('detailStatus');
+    statusEl.textContent = d.status === 'nodata' ? 'NO DATA' : d.status.toUpperCase();
+    statusEl.className = 'detail-status st-' + d.status;
+
+    document.getElementById('detailTitle').textContent = d.name;
+    document.getElementById('detailSummary').textContent = d.summary;
+
+    // Description
+    const descEl = document.getElementById('detailDesc');
+    if (d.description) {
+        descEl.textContent = d.description;
+        descEl.style.display = '';
+    } else {
+        descEl.style.display = 'none';
+    }
+
+    // Destroy previous charts
+    currentCharts.forEach(c => c.destroy());
+    currentCharts = [];
+
+    const chartsContainer = document.getElementById('detailCharts');
+    const tablesContainer = document.getElementById('detailTables');
+    chartsContainer.innerHTML = '';
+    tablesContainer.innerHTML = '';
+
+    // Render per-location sections
+    const locs = Object.keys(d.locations || {});
+    locs.forEach(loc => {
+        const locData = d.locations[loc];
+        if (!locData) return;
+
+        // Location header with status pill
+        const statusCls = locData.status === 'down' ? 'pill-down' : (locData.status === 'warn' ? 'pill-warn' : (locData.status === 'nodata' ? 'pill-nodata' : 'pill-up'));
+        const statusLabel = locData.status === 'nodata' ? 'NO DATA' : locData.status.toUpperCase();
+        const locHeader = '<div style="display:flex;align-items:center;gap:12px;margin:24px 0 12px;"><h3 style="font-size:1rem;font-weight:700;color:var(--text);">' + loc + '</h3><span class="pill ' + statusCls + '">' + statusLabel + '</span><span style="color:var(--text-dim);font-size:0.8rem;">' + locData.summary + '</span></div>';
+
+        // If no data for this location, show unreachable message
+        if (!locData.data || locData.data.length === 0) {
+            const emptyMessage = locData.status === 'up' ? 'No matching issues in this snapshot.' : 'No observations were sampled for this check.';
+            tablesContainer.innerHTML += locHeader + '<div class="detail-card" style="margin-bottom:16px;padding:20px 24px;"><p style="color:var(--gray);font-size:0.85rem;font-style:italic;">' + emptyMessage + '</p></div>';
+            return;
+        }
+
+        // Chart (if applicable)
+        if (d.detail_type === 'chart' && d.chart_field && locData.data.length && typeof Chart === 'function') {
+            const chartId = 'chart-' + loc.replace(/\s/g, '-');
+            chartsContainer.innerHTML += locHeader + '<div class="chart-wrap"><canvas id="' + chartId + '"></canvas></div>';
+            setTimeout(() => {
+                const canvas = document.getElementById(chartId);
+                if (!canvas) return;
+                const labels = locData.data.map(r => r.hostname || r.node_name || '');
+                const values = locData.data.map(r => {
+                    let v = r[d.chart_field] || '0';
+                    return parseFloat(String(v).replace('%','')) || 0;
+                });
+                const warningThreshold = ['memory-utilization', 'disk-utilization'].includes(id) ? 85 : 80;
+                const colors = values.map(value => value > 95 ? 'rgba(255,102,122,0.8)' : value > warningThreshold ? 'rgba(244,197,66,0.8)' : 'rgba(56,217,139,0.8)');
+                const maxVal = Math.max(...values, 1);
+                const yMax = Math.max(Math.ceil(maxVal * 1.5 / 5) * 5, 10);
+                const dataLabelPlugin = {
+                    id: 'dataLabels',
+                    afterDatasetsDraw(chart) {
+                        const { ctx } = chart;
+                        chart.data.datasets.forEach((ds, di) => {
+                            const meta = chart.getDatasetMeta(di);
+                            meta.data.forEach((bar, i) => {
+                                const val = ds.data[i];
+                                ctx.save();
+                                ctx.fillStyle = '#c8d6e5';
+                                ctx.font = 'bold 11px sans-serif';
+                                ctx.textAlign = 'center';
+                                ctx.textBaseline = 'bottom';
+                                ctx.fillText(val.toFixed(1) + '%', bar.x, bar.y - 4);
+                                ctx.restore();
+                            });
+                        });
+                    }
+                };
+                const chart = new Chart(canvas, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: d.chart_label,
+                            data: values,
+                            backgroundColor: colors,
+                            borderColor: colors.map(c => c.replace('0.8','1')),
+                            borderWidth: 1,
+                            borderRadius: 4,
+                            barPercentage: 0.7,
+                            categoryPercentage: 0.8,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { callbacks: { label: ctx => ctx.parsed.y.toFixed(1) + '%' }}
+                        },
+                        scales: {
+                            y: { beginAtZero: true, max: yMax, ticks: { callback: v => v + '%', color: '#6b7d93' }, grid: { color: '#1e2a3a' }},
+                            x: { ticks: { color: '#6b7d93' }, grid: { display: false }}
+                        }
+                    },
+                    plugins: [dataLabelPlugin]
+                });
+                currentCharts.push(chart);
+            }, 50);
+        }
+
+        // Table
+        if (d.detail_type === 'table' || d.detail_type === 'chart') {
+            const tableId = 'tbl-' + loc.replace(/\s/g, '-') + '-' + id;
+            let tableHtml = locHeader;
+            tableHtml += '<div class="detail-card" style="margin-bottom:16px;"><div class="detail-table-wrap"><table class="detail-table" id="' + tableId + '"><thead><tr>';
+            d.columns.forEach((col, i) => {
+                const label = col.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                tableHtml += '<th onclick="sortTableByCol(\'' + tableId + '\',' + i + ')" style="cursor:pointer;user-select:none;">' + label + ' <span class="arrow" style="opacity:0.4;font-size:0.6rem;">&#x25B4;&#x25BE;</span></th>';
+            });
+            tableHtml += '</tr></thead><tbody>';
+            locData.data.forEach(row => {
+                tableHtml += '<tr>';
+                d.columns.forEach(col => {
+                    let val = row[col] !== undefined ? row[col] : '';
+                    let cls = '';
+                    if (col === 'status') {
+                        if (val === 'Running' || val === 'Ready' || val === 'up') cls = 'cell-up';
+                        else if (val === 'Completed' || val === 'Pending') cls = 'cell-warn';
+                        else if (val.startsWith('unreachable')) cls = 'cell-warn';
+                        else if (val === 'no data') cls = '';
+                        else if (val) cls = 'cell-down';
+                    }
+                    if (col === 'restarts') {
+                        const r = parseInt(val) || 0;
+                        if (r > 20) cls = 'cell-down';
+                        else if (r > 5) cls = 'cell-warn';
+                    }
+                    tableHtml += '<td class="' + cls + '">' + val + '</td>';
+                });
+                tableHtml += '</tr>';
+            });
+            tableHtml += '</tbody></table></div></div>';
+            tablesContainer.innerHTML += tableHtml;
+        }
+    });
+
+    window.location.hash = id;
+}
+
+// Table sorting state per table
+const sortState = {};
+
+function sortTableByCol(tableId, colIdx) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+    const tbody = table.querySelector('tbody');
+    const ths = table.querySelectorAll('thead th');
+
+    // Toggle sort direction
+    const key = tableId + '_' + colIdx;
+    if (!sortState[key]) sortState[key] = { asc: true };
+    else sortState[key].asc = !sortState[key].asc;
+    const asc = sortState[key].asc;
+
+    // Visual indicator
+    ths.forEach((th, i) => {
+        const arrow = th.querySelector('.arrow');
+        if (arrow) arrow.style.opacity = (i === colIdx) ? '1' : '0.4';
+    });
+
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    rows.sort((a, b) => {
+        let av = a.cells[colIdx] ? a.cells[colIdx].textContent.trim() : '';
+        let bv = b.cells[colIdx] ? b.cells[colIdx].textContent.trim() : '';
+        let an = parseFloat(av.replace(/[^0-9.\-]/g, ''));
+        let bn = parseFloat(bv.replace(/[^0-9.\-]/g, ''));
+        if (!isNaN(an) && !isNaN(bn)) {
+            return asc ? an - bn : bn - an;
+        }
+        return asc ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+// Handle direct URL hash navigation
+window.addEventListener('load', () => {
+    const hash = window.location.hash.replace('#','');
+    if (hash === 'about') {
+        showAbout();
+    } else if (hash && DETAILS[hash]) {
+        showDetail(hash);
+    }
+});
+</script>
+</body>
+</html>

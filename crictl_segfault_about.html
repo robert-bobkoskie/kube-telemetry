@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Crictl Segfault Monitor - About</title>
+<style>
+        :root {
+            --bg: #f4f7f5;
+            --panel: #ffffff;
+            --ink: #202630;
+            --muted: #56606e;
+            --line: #d6dde7;
+            --accent: #0b5f8a;
+        }
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(180deg, #f8fbf9 0%, #eef3f7 100%);
+            color: var(--ink);
+            font-family: "Segoe UI", Tahoma, sans-serif;
+        }
+        .panel {
+            max-width: 1000px;
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        h1, h2 { margin-top: 0; }
+        p.meta { color: var(--muted); }
+        code {
+            background: #edf2f8;
+            border-radius: 4px;
+            padding: 2px 5px;
+            word-break: break-word;
+        }
+        a { color: var(--accent); }
+    </style>
+<link href="static-shared.css" rel="stylesheet"/>
+</head>
+<body class="status-preview">
+<style>
+.static-nav {
+    background: #edf2f8; border-bottom: 1px solid #d6dde7;
+    padding: 8px 24px; display: flex; gap: 16px; align-items: center;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    font-size: 0.82rem;
+}
+.static-nav a {
+    color: #0b5f8a; text-decoration: none; font-weight: 600;
+    padding: 4px 12px; border-radius: 4px; transition: background 0.15s;
+}
+.static-nav a:hover { background: rgba(11,95,138,0.1); }
+.static-nav a.active { background: rgba(11,95,138,0.15); color: #0a4a6a; }
+.static-nav .nav-sep { color: #b0bec5; }
+</style>
+<div class="static-nav">
+<a href="index.html">Health Dashboard</a>
+<span class="nav-sep">|</span>
+<a class="active" href="crictl_segfault_report.html">Segfault Monitor</a>
+<span class="nav-sep">|</span>
+<a href="version_audit_report.html">Version Audit</a>
+</div><p class="preview-controls"><label><input checked="" id="statusColors" onchange="document.body.classList.toggle('status-preview', this.checked)" title="Use demo status colors instead of system contrast colors" type="checkbox"/> Status colors</label></p>
+<div class="panel">
+<h1>About This Monitor</h1>
+<p class="meta">Synthetic snapshot | 2030-04-16T10:20:00Z</p>
+<p>This monitor runs remote crictl checks on platform hosts, records each run to CSV, and regenerates the dashboard HTML from CSV history.</p>
+<p><a href="crictl_segfault_report.html">Back to Report</a></p>
+</div>
+<div class="panel">
+<h2>Detection Logic</h2>
+<h3>Primary Check: Live Crash Detection</h3>
+<p>Runs <code>/usr/local/bin/crictl ps</code> on each host via SSH and captures stdout+stderr.</p>
+<ol>
+<li>Strip ANSI escape sequences from combined output.</li>
+<li>Scan every line using this case-insensitive regex:</li>
+</ol>
+<p><code>(sigsegv|segmentation\s+fault|segmentation\s+violation|segfault|signal\s+11|core\s+dumped|unexpected\s+signal\s+during\s+runtime)</code></p>
+<p>If any line matches, the full crash block (including Go stack trace) is captured as evidence.</p>
+<h3>Secondary Check: Historical Crash Detection (dmesg)</h3>
+<p>After <code>crictl ps</code>, runs <code>dmesg | grep -i segfault | grep -i crictl</code> to find past crashes since boot.</p>
+<p>This catches segfaults that occurred between cron runs—even if <code>crictl ps</code> works fine now.</p>
+<p>Evidence is the kernel one-liner (fault address, instruction pointer, binary name).</p>
+<h3>Benign Output Handling</h3>
+<p>The expected <code>FATA[0000] load config file: ...crictl.yaml: no such file or directory</code> message is classified as OK using:</p>
+<p><code>load\s+config\s+file:.*crictl\.yaml:.*no\s+such\s+file\s+or\s+directory</code></p>
+</div>
+<div class="panel">
+<h2>Status Codes</h2>
+<table style="width:100%;border-collapse:collapse">
+<thead><tr style="background:#edf2f8"><th style="padding:8px;text-align:left;border-bottom:1px solid #d6dde7">Status</th><th style="padding:8px;text-align:left;border-bottom:1px solid #d6dde7">Meaning</th><th style="padding:8px;text-align:left;border-bottom:1px solid #d6dde7">Evidence Shown</th></tr></thead>
+<tbody>
+<tr><td style="padding:8px;border-bottom:1px solid #d6dde7"><code>FAIL_SEGFAULT</code></td><td style="padding:8px;border-bottom:1px solid #d6dde7">Live crash — caught in the act</td><td style="padding:8px;border-bottom:1px solid #d6dde7">Full Go runtime stack trace</td></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #d6dde7"><code>WARN_SEGFAULT_HISTORY</code></td><td style="padding:8px;border-bottom:1px solid #d6dde7">crictl ps OK now, but dmesg shows past crash since boot</td><td style="padding:8px;border-bottom:1px solid #d6dde7">Kernel log line (e.g., <code>crictl[pid]: segfault at ...</code>)</td></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #d6dde7"><code>OK</code></td><td style="padding:8px;border-bottom:1px solid #d6dde7">No segfault now AND no history in dmesg</td><td style="padding:8px;border-bottom:1px solid #d6dde7">Normal crictl output or benign config message</td></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #d6dde7"><code>FAIL_CMD</code></td><td style="padding:8px;border-bottom:1px solid #d6dde7">Command error (not found, permission denied, etc.)</td><td style="padding:8px;border-bottom:1px solid #d6dde7">Error message from shell</td></tr>
+<tr><td style="padding:8px;border-bottom:1px solid #d6dde7"><code>FAIL_SSH</code></td><td style="padding:8px;border-bottom:1px solid #d6dde7">SSH connection failed</td><td style="padding:8px;border-bottom:1px solid #d6dde7">Connection error details</td></tr>
+</tbody>
+</table>
+</div>
+<div class="panel">
+<h2>Alerting and History Across Runs</h2>
+<ul>
+<li><code>crictl_segfault_report.html</code>: rolling dashboard (regenerated each run).</li>
+<li><code>crictl_segfault_alert_latest.html</code>: alert page showing live + historical segfault evidence.</li>
+<li><code>crictl_segfault_timeseries.csv</code>: persistent multi-run history, append-only unless rotation occurs.</li>
+<li><code>crictl_segfault_alerts.log</code>: one log line per segfault run with run timestamp and affected hosts.</li>
+</ul>
+<p>With <code>--fail-on-segfault</code>, process exits code 2 when any host is <code>FAIL_SEGFAULT</code>.</p>
+</div>
+<div class="panel">
+<h2>Common CLI Options</h2>
+<ul>
+<li><code>--elevate-mode none|sudo|su|toor</code>: choose one elevation strategy for the entire run. Also used for the dmesg secondary check.</li>
+<li><code>--no-fallback</code>: disable fallback command candidates and run only <code>--command</code>.</li>
+<li><code>--fail-on-segfault</code>: return exit code 2 when a segfault is detected.</li>
+<li><code>--latest-segfault-alert &lt;path&gt;</code>: set the single overwritten segfault alert HTML path.</li>
+<li><code>--rotate-max-rows N</code>: rotate CSV when row count reaches N; use 0 to disable rotation.</li>
+<li><code>--help</code>: show full argument help and defaults.</li>
+</ul>
+</div>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>SEV2: Platform Segfault Alert</title>
+<style>
+        :root {
+            --bg: #fff5f5;
+            --panel: #ffffff;
+            --ink: #231f20;
+            --line: #f0c9cc;
+            --accent: #b5002d;
+        }
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(180deg, #fff5f5 0%, #ffeef0 100%);
+            color: var(--ink);
+            font-family: "Segoe UI", Tahoma, sans-serif;
+        }
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+        h1 { margin: 0 0 8px 0; color: var(--accent); }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td {
+            border-bottom: 1px solid var(--line);
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+            font-size: 13px;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+        th { background: #ffe6ea; }
+        a { color: var(--accent); }
+    </style>
+<link href="static-shared.css" rel="stylesheet"/>
+</head>
+<body class="status-preview">
+<style>
+.static-nav {
+    background: #edf2f8; border-bottom: 1px solid #d6dde7;
+    padding: 8px 24px; display: flex; gap: 16px; align-items: center;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    font-size: 0.82rem;
+}
+.static-nav a {
+    color: #0b5f8a; text-decoration: none; font-weight: 600;
+    padding: 4px 12px; border-radius: 4px; transition: background 0.15s;
+}
+.static-nav a:hover { background: rgba(11,95,138,0.1); }
+.static-nav a.active { background: rgba(11,95,138,0.15); color: #0a4a6a; }
+.static-nav .nav-sep { color: #b0bec5; }
+</style>
+<div class="static-nav">
+<a href="index.html">Health Dashboard</a>
+<span class="nav-sep">|</span>
+<a class="active" href="crictl_segfault_report.html">Segfault Monitor</a>
+<span class="nav-sep">|</span>
+<a href="version_audit_report.html">Version Audit</a>
+</div><p class="preview-controls"><label><input checked="" id="statusColors" onchange="document.body.classList.toggle('status-preview', this.checked)" title="Use demo status colors instead of system contrast colors" type="checkbox"/> Status colors</label></p>
+<div class="panel">
+<h1>Demo Segfault Alert</h1><p>Synthetic snapshot: 2030-04-16T10:20:00Z | 1 live event; 2 historical observations</p>
+<p>Synthetic snapshot: 2030-04-16T10:20:00Z | 1 live event; 2 historical observations</p>
+<p><a href="crictl_segfault_report.html">Open Main Monitor Report</a></p>
+</div>
+<div class="panel">
+<h2>Latest Run Segfault Evidence</h2>
+<table>
+<thead>
+<tr><th>Timestamp (UTC)</th><th>Hostname</th><th>Target Node</th><th>Location</th><th>Command</th><th>Evidence</th></tr>
+</thead>
+<tbody><tr><td>2030-04-16T10:20:00Z</td><td>alpha-compute-02.example.test</td><td>alpha-compute-02</td><td>Site-Alpha</td><td>crictl ps</td><td>Synthetic crictl signal 11 event</td></tr></tbody>
+</table>
+</div>
+<div class="panel">
+<h2>Segfault History (From CSV)</h2>
+<table>
+<thead>
+<tr><th>Timestamp (UTC)</th><th>Run ID</th><th>Hostname</th><th>Target Node</th><th>Location</th><th>Evidence</th></tr>
+</thead>
+<tbody><tr><td>2030-04-16T10:20:00Z</td><td>demo-run-07</td><td>alpha-compute-02.example.test</td><td>alpha-compute-02</td><td>Site-Alpha</td><td>Synthetic crictl signal 11 event</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>demo-run-07</td><td>alpha-compute-03.example.test</td><td>alpha-compute-03</td><td>Site-Alpha</td><td>Synthetic prior crash; current check passed</td></tr><tr><td>2030-04-16T10:20:00Z</td><td>demo-run-07</td><td>gamma-compute-02.example.test</td><td>gamma-compute-02</td><td>Site-Gamma</td><td>Synthetic prior crash; current check passed</td></tr></tbody>
+</table>
+</div>
+</body>
+</html>
